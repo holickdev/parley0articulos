@@ -33,6 +33,42 @@ export default function Authenticated({
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    href={route('admin.championships.index')}
+                                    active={route().current('admin.championships.*')}
+                                >
+                                    Campeonatos
+                                </NavLink>
+                                <NavLink
+                                    href={route('admin.coleadores.index')}
+                                    active={route().current('admin.coleadores.*')}
+                                >
+                                    Coleadores
+                                </NavLink>
+                                <NavLink
+                                    href={route('admin.entries.index')}
+                                    active={route().current('admin.entries.*')}
+                                >
+                                    Cuadros
+                                </NavLink>
+                                <NavLink
+                                    href={route('admin.scores.index')}
+                                    active={route().current('admin.scores.*')}
+                                >
+                                    Puntuaciones
+                                </NavLink>
+                                <NavLink
+                                    href={route('admin.customers.index')}
+                                    active={route().current('admin.customers.*')}
+                                >
+                                    Clientes
+                                </NavLink>
+                                <NavLink
+                                    href={route('admin.payments.index')}
+                                    active={route().current('admin.payments.*')}
+                                >
+                                    Pagos
+                                </NavLink>
                             </div>
                         </div>
 
@@ -136,6 +172,30 @@ export default function Authenticated({
                             active={route().current('dashboard')}
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('admin.championships.index')}
+                            active={route().current('admin.championships.*')}
+                        >
+                            Campeonatos
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('admin.coleadores.index')}
+                            active={route().current('admin.coleadores.*')}
+                        >
+                            Coleadores
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('admin.entries.index')}
+                            active={route().current('admin.entries.*')}
+                        >
+                            Cuadros
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('admin.scores.index')}
+                            active={route().current('admin.scores.*')}
+                        >
+                            Puntuaciones
                         </ResponsiveNavLink>
                     </div>
 
