@@ -22,6 +22,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Admin Routes
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::resource('coleadores', \App\Http\Controllers\Admin\ColeadorController::class);
+        Route::resource('championships', \App\Http\Controllers\Admin\ChampionshipController::class);
+        Route::resource('entries', \App\Http\Controllers\Admin\EntryController::class);
+        Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
+        Route::resource('payments', \App\Http\Controllers\Admin\PaymentController::class);
+        Route::resource('rounds', \App\Http\Controllers\Admin\RoundController::class);
+        Route::resource('turns', \App\Http\Controllers\Admin\TurnController::class);
+        Route::resource('scores', \App\Http\Controllers\Admin\ScoreController::class);
+    });
 });
 
 require __DIR__.'/auth.php';
