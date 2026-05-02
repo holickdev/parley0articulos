@@ -7,12 +7,16 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 
+interface Championship {
+    id: number;
+    name: string;
+}
+
 interface Turn {
     id: number;
     number: number;
     round: {
         number: number;
-        championship: { name: string }
     }
 }
 
@@ -22,11 +26,12 @@ interface Coleador {
 }
 
 interface Props {
+    championship: Championship;
     turns: Turn[];
     coleadores: Coleador[];
 }
 
-export default function Create({ turns, coleadores }: Props) {
+export default function Create({ championship, turns, coleadores }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         turn_id: '',
         coleador_id: '',
@@ -38,18 +43,18 @@ export default function Create({ turns, coleadores }: Props) {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('admin.scores.store'));
+        post(route('admin.championships.scores.store', championship.id));
     };
 
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Cargar Resultado
+                    Cargar Resultado: {championship.name}
                 </h2>
             }
         >
-            <Head title="Cargar Resultado" />
+            <Head title={`Cargar Resultado - ${championship.name}`} />
 
             <div className="py-12">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
@@ -57,7 +62,7 @@ export default function Create({ turns, coleadores }: Props) {
                         <form onSubmit={submit} className="p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <InputLabel htmlFor="turn_id" value="Turno y Campeonato" />
+                                    <InputLabel htmlFor="turn_id" value="Ronda y Turno" />
                                     <select
                                         id="turn_id"
                                         value={data.turn_id}
@@ -68,7 +73,7 @@ export default function Create({ turns, coleadores }: Props) {
                                         <option value="">Seleccione un turno</option>
                                         {turns.map((t) => (
                                             <option key={t.id} value={t.id}>
-                                                {t.round.championship.name} - R{t.round.number} T{t.number}
+                                                Ronda {t.round.number} - Turno {t.number}
                                             </option>
                                         ))}
                                     </select>
@@ -148,7 +153,7 @@ export default function Create({ turns, coleadores }: Props) {
                             </div>
 
                             <div className="mt-8 flex items-center justify-end">
-                                <Link href={route('admin.scores.index')}>
+                                <Link href={route('admin.championships.scores.index', championship.id)}>
                                     <SecondaryButton>Cancelar</SecondaryButton>
                                 </Link>
                                 <PrimaryButton className="ml-4" disabled={processing}>

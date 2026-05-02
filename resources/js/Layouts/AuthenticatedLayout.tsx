@@ -52,12 +52,6 @@ export default function Authenticated({
                                     Cuadros
                                 </NavLink>
                                 <NavLink
-                                    href={route('admin.scores.index')}
-                                    active={route().current('admin.scores.*')}
-                                >
-                                    Puntuaciones
-                                </NavLink>
-                                <NavLink
                                     href={route('admin.customers.index')}
                                     active={route().current('admin.customers.*')}
                                 >
@@ -202,12 +196,6 @@ export default function Authenticated({
                             active={route().current('admin.entries.*')}
                         >
                             Cuadros
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('admin.scores.index')}
-                            active={route().current('admin.scores.*')}
-                        >
-                            Puntuaciones
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             href={route('admin.customers.index')}

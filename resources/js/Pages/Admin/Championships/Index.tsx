@@ -62,10 +62,16 @@ export default function Index({ championships }: { championships: Championship[]
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-end space-x-2 border-t pt-4">
+                                        <div className="flex justify-between items-center border-t pt-4">
+                                            <Link
+                                                href={route('admin.championships.scores.index', championship.id)}
+                                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition ease-in-out duration-150"
+                                            >
+                                                Ver Puntuaciones
+                                            </Link>
                                             <Link
                                                 href={route('admin.championships.edit', championship.id)}
-                                                className="text-sm font-medium text-indigo-600 hover:text-indigo-900"
+                                                className="text-sm font-medium text-gray-600 hover:text-indigo-900"
                                             >
                                                 Configuración
                                             </Link>
