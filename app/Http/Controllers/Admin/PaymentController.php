@@ -16,11 +16,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        return Inertia::render('Admin/Payments/Create');
-    }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -35,13 +30,6 @@ class PaymentController extends Controller
         Payment::create($validated);
 
         return redirect()->route('admin.payments.index')->with('success', 'Pago registrado con éxito.');
-    }
-
-    public function edit(Payment $payment)
-    {
-        return Inertia::render('Admin/Payments/Edit', [
-            'payment' => $payment
-        ]);
     }
 
     public function update(Request $request, Payment $payment)

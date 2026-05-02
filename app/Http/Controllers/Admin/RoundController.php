@@ -13,13 +13,7 @@ class RoundController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Rounds/Index', [
-            'rounds' => Round::with('championship')->get()
-        ]);
-    }
-
-    public function create()
-    {
-        return Inertia::render('Admin/Rounds/Create', [
+            'rounds' => Round::with('championship')->get(),
             'championships' => Championship::all()
         ]);
     }
@@ -34,14 +28,6 @@ class RoundController extends Controller
         Round::create($validated);
 
         return redirect()->route('admin.rounds.index')->with('success', 'Ronda creada con éxito.');
-    }
-
-    public function edit(Round $round)
-    {
-        return Inertia::render('Admin/Rounds/Edit', [
-            'round' => $round,
-            'championships' => Championship::all()
-        ]);
     }
 
     public function update(Request $request, Round $round)

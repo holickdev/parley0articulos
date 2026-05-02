@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
 
 interface Entry {
@@ -24,15 +24,9 @@ const statusLabels = {
 };
 
 export default function Index({ entries }: { entries: Entry[] }) {
-    const { put } = useForm();
-
     const updateStatus = (id: number, status: string) => {
         if (confirm(`¿Marcar este cuadro como ${status === 'approved' ? 'APROBADO' : 'RECHAZADO'}?`)) {
-            put(route('admin.entries.update', id), {
-                data: { status }, // Note: EntryController currently only expects status in update for audit flow
-                // But since I made it a full CRUD, I should probably handle it carefully.
-                // For now, I'll stick to a simple quick action if I implement it in controller.
-            });
+            router.put(route('admin.entries.update', id), { status });
         }
     };
 
@@ -86,6 +80,22 @@ export default function Index({ entries }: { entries: Entry[] }) {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-4 text-right text-sm font-medium space-x-2">
+                                                {entry.status === 'pending' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => updateStatus(entry.id, 'approved')}
+                                                            className="text-green-600 hover:text-green-900"
+                                                        >
+                                                            Aprobar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => updateStatus(entry.id, 'rejected')}
+                                                            className="text-orange-600 hover:text-orange-900"
+                                                        >
+                                                            Rechazar
+                                                        </button>
+                                                    </>
+                                                )}
                                                 <Link
                                                     href={route('admin.entries.edit', entry.id)}
                                                     className="text-indigo-600 hover:text-indigo-900"

@@ -16,11 +16,6 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        return Inertia::render('Admin/Customers/Create');
-    }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -32,13 +27,6 @@ class CustomerController extends Controller
         Customer::create($validated);
 
         return redirect()->route('admin.customers.index')->with('success', 'Cliente creado con éxito.');
-    }
-
-    public function edit(Customer $customer)
-    {
-        return Inertia::render('Admin/Customers/Edit', [
-            'customer' => $customer
-        ]);
     }
 
     public function update(Request $request, Customer $customer)

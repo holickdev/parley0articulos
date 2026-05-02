@@ -26,6 +26,7 @@ class EntryController extends Controller
         return Inertia::render('Admin/Entries/Create', [
             'championships' => Championship::where('status', '!=', 'finished')->get(),
             'customers' => Customer::all(),
+            'payments' => Payment::doesntHave('entry')->get(), // Only available payments
             'coleadores' => Coleador::orderBy('name')->get()
         ]);
     }
@@ -76,29 +77,26 @@ class EntryController extends Controller
     public function update(Request $request, Entry $entry)
     {
         $validated = $request->validate([
-            'championship_id' => 'required|exists:championships,id',
-            'customer_id' => 'required|exists:customers,id',
-            'payment_id' => 'required|exists:payments,id',
-            'name' => 'required|string|max:255',
-            'status' => 'required|in:pending,approved,rejected',
-            'coleadores' => 'required|array',
+            'championship_id' => 'sometimes|required|exists:championships,id',
+            'customer_id' => 'sometimes|required|exists:customers,id',
+            'payment_id' => 'sometimes|required|exists:payments,id',
+            'name' => 'sometimes|required|string|max:255',
+            'status' => 'sometimes|required|in:pending,approved,rejected',
+            'coleadores' => 'sometimes|required|array',
             'coleadores.*' => 'exists:coleadores,id'
         ]);
 
         DB::transaction(function () use ($validated, $entry) {
-            sort($validated['coleadores']);
-            $hash = implode('-', $validated['coleadores']);
+            if (isset($validated['coleadores'])) {
+                sort($validated['coleadores']);
+                $validated['combination_hash'] = implode('-', $validated['coleadores']);
+            }
 
-            $entry->update([
-                'championship_id' => $validated['championship_id'],
-                'customer_id' => $validated['customer_id'],
-                'payment_id' => $validated['payment_id'],
-                'name' => $validated['name'],
-                'status' => $validated['status'],
-                'combination_hash' => $hash,
-            ]);
+            $entry->update($validated);
 
-            $entry->coleadores()->sync($validated['coleadores']);
+            if (isset($validated['coleadores'])) {
+                $entry->coleadores()->sync($validated['coleadores']);
+            }
         });
 
         return redirect()->route('admin.entries.index')->with('success', 'Cuadro actualizado con éxito.');

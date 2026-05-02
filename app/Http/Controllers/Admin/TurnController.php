@@ -13,13 +13,7 @@ class TurnController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Turns/Index', [
-            'turns' => Turn::with(['round.championship'])->get()
-        ]);
-    }
-
-    public function create()
-    {
-        return Inertia::render('Admin/Turns/Create', [
+            'turns' => Turn::with(['round.championship'])->get(),
             'rounds' => Round::with('championship')->get()
         ]);
     }
@@ -34,14 +28,6 @@ class TurnController extends Controller
         Turn::create($validated);
 
         return redirect()->route('admin.turns.index')->with('success', 'Turno creado con éxito.');
-    }
-
-    public function edit(Turn $turn)
-    {
-        return Inertia::render('Admin/Turns/Edit', [
-            'turn' => $turn,
-            'rounds' => Round::with('championship')->get()
-        ]);
     }
 
     public function update(Request $request, Turn $turn)

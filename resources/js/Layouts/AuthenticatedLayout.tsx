@@ -69,6 +69,18 @@ export default function Authenticated({
                                 >
                                     Pagos
                                 </NavLink>
+                                <NavLink
+                                    href={route('admin.rounds.index')}
+                                    active={route().current('admin.rounds.*')}
+                                >
+                                    Rondas
+                                </NavLink>
+                                <NavLink
+                                    href={route('admin.turns.index')}
+                                    active={route().current('admin.turns.*')}
+                                >
+                                    Turnos
+                                </NavLink>
                             </div>
                         </div>
 
@@ -196,6 +208,30 @@ export default function Authenticated({
                             active={route().current('admin.scores.*')}
                         >
                             Puntuaciones
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('admin.customers.index')}
+                            active={route().current('admin.customers.*')}
+                        >
+                            Clientes
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('admin.payments.index')}
+                            active={route().current('admin.payments.*')}
+                        >
+                            Pagos
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('admin.rounds.index')}
+                            active={route().current('admin.rounds.*')}
+                        >
+                            Rondas
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('admin.turns.index')}
+                            active={route().current('admin.turns.*')}
+                        >
+                            Turnos
                         </ResponsiveNavLink>
                     </div>
 
