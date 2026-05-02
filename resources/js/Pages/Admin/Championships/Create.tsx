@@ -16,6 +16,7 @@ export default function Create({ coleadores }: { coleadores: Coleador[] }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         coleadores_count: 4,
+        rounds_count: 4,
         entry_price: '',
         status: 'open',
         coleadores: [] as number[],
@@ -91,6 +92,19 @@ export default function Create({ coleadores }: { coleadores: Coleador[] }) {
                                     />
                                     <p className="mt-1 text-xs text-gray-500">Cuántos coleadores debe elegir el cliente.</p>
                                     <InputError message={errors.coleadores_count} className="mt-2" />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="rounds_count" value="Número de Rondas" />
+                                    <TextInput
+                                        id="rounds_count"
+                                        type="number"
+                                        value={data.rounds_count.toString()}
+                                        onChange={(e) => setData('rounds_count', parseInt(e.target.value))}
+                                        className="mt-1 block w-full"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">Cuántas columnas de puntuación tendrá el campeonato.</p>
+                                    <InputError message={errors.rounds_count} className="mt-2" />
                                 </div>
 
                                 <div>

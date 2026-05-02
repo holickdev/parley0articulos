@@ -7,6 +7,7 @@ use App\Models\Championship;
 use App\Models\Coleador;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class ChampionshipController extends Controller
 {
@@ -29,22 +30,31 @@ class ChampionshipController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'coleadores_count' => 'required|integer|min:1',
+            'rounds_count' => 'required|integer|min:1|max:10',
             'entry_price' => 'required|numeric|min:0',
             'status' => 'required|in:open,in_progress,finished',
             'coleadores' => 'required|array|min:1',
             'coleadores.*' => 'exists:coleadores,id'
         ]);
 
-        $championship = Championship::create([
-            'name' => $validated['name'],
-            'coleadores_count' => $validated['coleadores_count'],
-            'entry_price' => $validated['entry_price'],
-            'status' => $validated['status'],
-        ]);
+        return DB::transaction(function () use ($validated) {
+            $championship = Championship::create([
+                'name' => $validated['name'],
+                'coleadores_count' => $validated['coleadores_count'],
+                'rounds_count' => $validated['rounds_count'],
+                'entry_price' => $validated['entry_price'],
+                'status' => $validated['status'],
+            ]);
 
-        $championship->coleadores()->sync($validated['coleadores']);
+            $championship->coleadores()->sync($validated['coleadores']);
 
-        return redirect()->route('admin.championships.index')->with('success', 'Campeonato creado con éxito.');
+            // Crear las rondas automáticamente
+            for ($i = 1; $i <= $validated['rounds_count']; $i++) {
+                $championship->rounds()->create(['number' => $i]);
+            }
+
+            return redirect()->route('admin.championships.index')->with('success', 'Campeonato creado con éxito con sus rondas.');
+        });
     }
 
     public function edit(Championship $championship)
@@ -60,21 +70,36 @@ class ChampionshipController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'coleadores_count' => 'required|integer|min:1',
+            'rounds_count' => 'required|integer|min:1|max:10',
             'entry_price' => 'required|numeric|min:0',
             'status' => 'required|in:open,in_progress,finished',
             'coleadores' => 'required|array|min:1',
             'coleadores.*' => 'exists:coleadores,id'
         ]);
 
-        $championship->update([
-            'name' => $validated['name'],
-            'coleadores_count' => $validated['coleadores_count'],
-            'entry_price' => $validated['entry_price'],
-            'status' => $validated['status'],
-        ]);
+        DB::transaction(function () use ($validated, $championship) {
+            $oldRoundsCount = $championship->rounds_count;
 
-        $championship->coleadores()->sync($validated['coleadores']);
+            $championship->update([
+                'name' => $validated['name'],
+                'coleadores_count' => $validated['coleadores_count'],
+                'rounds_count' => $validated['rounds_count'],
+                'entry_price' => $validated['entry_price'],
+                'status' => $validated['status'],
+            ]);
 
-        return redirect()->route('admin.championships.index')->with('success', 'Campeonato actualizado con éxito.');
+            $championship->coleadores()->sync($validated['coleadores']);
+
+            // Ajustar rondas si cambió el número
+            if ($validated['rounds_count'] > $oldRoundsCount) {
+                for ($i = $oldRoundsCount + 1; $i <= $validated['rounds_count']; $i++) {
+                    $championship->rounds()->create(['number' => $i]);
+                }
+            } elseif ($validated['rounds_count'] < $oldRoundsCount) {
+                $championship->rounds()->where('number', '>', $validated['rounds_count'])->delete();
+            }
+        });
+
+        return redirect()->route('admin.championships.index')->with('success', 'Campeonato actualizado.');
     }
 }

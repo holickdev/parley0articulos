@@ -16,6 +16,7 @@ interface Championship {
     id: number;
     name: string;
     coleadores_count: number;
+    rounds_count: number;
     entry_price: string;
     status: 'open' | 'in_progress' | 'finished';
     coleadores: Coleador[];
@@ -25,6 +26,7 @@ export default function Edit({ championship, coleadores }: { championship: Champ
     const { data, setData, put, processing, errors } = useForm({
         name: championship.name,
         coleadores_count: championship.coleadores_count,
+        rounds_count: championship.rounds_count,
         entry_price: championship.entry_price,
         status: championship.status,
         coleadores: championship.coleadores.map(c => c.id),
@@ -98,6 +100,18 @@ export default function Edit({ championship, coleadores }: { championship: Champ
                                         className="mt-1 block w-full"
                                     />
                                     <InputError message={errors.coleadores_count} className="mt-2" />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="rounds_count" value="Número de Rondas" />
+                                    <TextInput
+                                        id="rounds_count"
+                                        type="number"
+                                        value={data.rounds_count.toString()}
+                                        onChange={(e) => setData('rounds_count', parseInt(e.target.value))}
+                                        className="mt-1 block w-full"
+                                    />
+                                    <InputError message={errors.rounds_count} className="mt-2" />
                                 </div>
 
                                 <div>

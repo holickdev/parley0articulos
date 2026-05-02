@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Championship;
 use App\Models\Score;
 use App\Models\Round;
-use App\Models\Coleador;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -15,12 +14,20 @@ class ScoreController extends Controller
 {
     public function index(Championship $championship)
     {
-        // Get individual scores for this championship
-        $scores = Score::whereHas('round', function ($query) use ($championship) {
+        $championship->load(['rounds', 'coleadores']);
+        
+        // Obtener todas las puntuaciones existentes para este campeonato
+        $existingScores = Score::whereHas('round', function ($query) use ($championship) {
             $query->where('championship_id', $championship->id);
-        })->with(['round', 'coleador'])->latest()->get();
+        })->get();
 
-        // Get leaderboard (aggregated scores per coleador)
+        // Estructurar las puntuaciones en un mapa para fácil acceso: [round_id][coleador_id]
+        $scoresMap = [];
+        foreach ($existingScores as $score) {
+            $scoresMap[$score->round_id][$score->coleador_id] = $score;
+        }
+
+        // Líder (puntos totales) para el cuadro resumen
         $leaderboard = DB::table('scores')
             ->join('rounds', 'scores.round_id', '=', 'rounds.id')
             ->join('coleadores', 'scores.coleador_id', '=', 'coleadores.id')
@@ -40,74 +47,50 @@ class ScoreController extends Controller
 
         return Inertia::render('Admin/Scores/Index', [
             'championship' => $championship,
-            'scores' => $scores,
+            'rounds' => $championship->rounds,
+            'coleadores' => $championship->coleadores,
+            'scoresMap' => $scoresMap,
             'leaderboard' => $leaderboard
         ]);
     }
 
-    public function create(Championship $championship)
-    {
-        return Inertia::render('Admin/Scores/Create', [
-            'championship' => $championship,
-            'rounds' => Round::where('championship_id', $championship->id)->get(),
-            'coleadores' => $championship->coleadores()->orderBy('name')->get()
-        ]);
-    }
-
+    /**
+     * Guardar masivamente las puntuaciones desde la matriz
+     */
     public function store(Request $request, Championship $championship)
     {
         $validated = $request->validate([
-            'round_id' => 'required|exists:rounds,id',
-            'coleador_id' => 'required|exists:coleadores,id',
-            'effective_coleadas' => 'required|integer|min:0',
-            'null_coleadas' => 'required|integer|min:0',
-            'gate_bulls' => 'required|integer|min:0',
-            'articles' => 'required|integer|min:0',
+            'scores' => 'required|array',
+            'scores.*.*.effective_coleadas' => 'nullable|integer|min:0',
+            'scores.*.*.null_coleadas' => 'nullable|integer|min:0',
+            'scores.*.*.gate_bulls' => 'nullable|integer|min:0',
+            'scores.*.*.articles' => 'nullable|integer|min:0',
         ]);
 
-        Score::create($validated);
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['scores'] as $roundId => $coleadores) {
+                foreach ($coleadores as $coleadorId => $data) {
+                    // Solo guardar si hay algún valor o si ya existía para actualizar
+                    $hasData = ($data['effective_coleadas'] ?? 0) > 0 || 
+                              ($data['null_coleadas'] ?? 0) > 0 || 
+                              ($data['gate_bulls'] ?? 0) > 0 || 
+                              ($data['articles'] ?? 0) > 0;
 
-        return redirect()->route('admin.championships.scores.index', $championship)
-            ->with('success', 'Puntuación registrada con éxito.');
-    }
+                    if ($hasData) {
+                        Score::updateOrCreate(
+                            ['round_id' => $roundId, 'coleador_id' => $coleadorId],
+                            [
+                                'effective_coleadas' => $data['effective_coleadas'] ?? 0,
+                                'null_coleadas' => $data['null_coleadas'] ?? 0,
+                                'gate_bulls' => $data['gate_bulls'] ?? 0,
+                                'articles' => $data['articles'] ?? 0,
+                            ]
+                        );
+                    }
+                }
+            }
+        });
 
-    public function edit(Score $score)
-    {
-        $score->load(['round.championship', 'coleador']);
-        $championship = $score->round->championship;
-
-        return Inertia::render('Admin/Scores/Edit', [
-            'score' => $score,
-            'championship' => $championship,
-            'rounds' => Round::where('championship_id', $championship->id)->get(),
-            'coleadores' => $championship->coleadores()->orderBy('name')->get()
-        ]);
-    }
-
-    public function update(Request $request, Score $score)
-    {
-        $validated = $request->validate([
-            'round_id' => 'required|exists:rounds,id',
-            'coleador_id' => 'required|exists:coleadores,id',
-            'effective_coleadas' => 'required|integer|min:0',
-            'null_coleadas' => 'required|integer|min:0',
-            'gate_bulls' => 'required|integer|min:0',
-            'articles' => 'required|integer|min:0',
-        ]);
-
-        $score->update($validated);
-        $championship = $score->round->championship;
-
-        return redirect()->route('admin.championships.scores.index', $championship)
-            ->with('success', 'Puntuación actualizada con éxito.');
-    }
-
-    public function destroy(Score $score)
-    {
-        $championship = $score->round->championship;
-        $score->delete();
-
-        return redirect()->route('admin.championships.scores.index', $championship)
-            ->with('success', 'Puntuación eliminada con éxito.');
+        return redirect()->back()->with('success', 'Puntuaciones guardadas correctamente.');
     }
 }
