@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('scores', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('turn_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('round_id')->constrained()->cascadeOnDelete();
             $table->foreignId('coleador_id')->constrained('coleadores')->cascadeOnDelete();
             $table->integer('effective_coleadas')->default(0); // ce
             $table->integer('null_coleadas')->default(0);      // cn
@@ -21,7 +21,8 @@ return new class extends Migration
             $table->integer('articles')->default(0);           // ar
             $table->timestamps();
 
-            $table->unique(['turn_id', 'coleador_id']);
+            // Un coleador solo puede tener una puntuación por ronda
+            $table->unique(['round_id', 'coleador_id']);
         });
     }
 

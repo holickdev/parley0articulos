@@ -23,10 +23,10 @@ class Round extends Model
     }
 
     /**
-     * Get the turns for the round.
+     * Get the scores for the round.
      */
-    public function turns(): HasMany
+    public function scores(): HasMany
     {
-        return $this->hasMany(Turn::class);
+        return $this->hasMany(Score::class);
     }
 }

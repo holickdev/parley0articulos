@@ -69,12 +69,6 @@ export default function Authenticated({
                                 >
                                     Rondas
                                 </NavLink>
-                                <NavLink
-                                    href={route('admin.turns.index')}
-                                    active={route().current('admin.turns.*')}
-                                >
-                                    Turnos
-                                </NavLink>
                             </div>
                         </div>
 
@@ -214,12 +208,6 @@ export default function Authenticated({
                             active={route().current('admin.rounds.*')}
                         >
                             Rondas
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('admin.turns.index')}
-                            active={route().current('admin.turns.*')}
-                        >
-                            Turnos
                         </ResponsiveNavLink>
                     </div>
 

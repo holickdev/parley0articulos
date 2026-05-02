@@ -12,12 +12,9 @@ interface Championship {
     name: string;
 }
 
-interface Turn {
+interface Round {
     id: number;
     number: number;
-    round: {
-        number: number;
-    }
 }
 
 interface Coleador {
@@ -27,13 +24,13 @@ interface Coleador {
 
 interface Props {
     championship: Championship;
-    turns: Turn[];
+    rounds: Round[];
     coleadores: Coleador[];
 }
 
-export default function Create({ championship, turns, coleadores }: Props) {
+export default function Create({ championship, rounds, coleadores }: Props) {
     const { data, setData, post, processing, errors } = useForm({
-        turn_id: '',
+        round_id: '',
         coleador_id: '',
         effective_coleadas: '0',
         null_coleadas: '0',
@@ -62,22 +59,22 @@ export default function Create({ championship, turns, coleadores }: Props) {
                         <form onSubmit={submit} className="p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <InputLabel htmlFor="turn_id" value="Ronda y Turno" />
+                                    <InputLabel htmlFor="round_id" value="Ronda" />
                                     <select
-                                        id="turn_id"
-                                        value={data.turn_id}
-                                        onChange={(e) => setData('turn_id', e.target.value)}
+                                        id="round_id"
+                                        value={data.round_id}
+                                        onChange={(e) => setData('round_id', e.target.value)}
                                         className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                         required
                                     >
-                                        <option value="">Seleccione un turno</option>
-                                        {turns.map((t) => (
-                                            <option key={t.id} value={t.id}>
-                                                Ronda {t.round.number} - Turno {t.number}
+                                        <option value="">Seleccione una ronda</option>
+                                        {rounds.map((r) => (
+                                            <option key={r.id} value={r.id}>
+                                                Ronda {r.number}
                                             </option>
                                         ))}
                                     </select>
-                                    <InputError message={errors.turn_id} className="mt-2" />
+                                    <InputError message={errors.round_id} className="mt-2" />
                                 </div>
 
                                 <div>

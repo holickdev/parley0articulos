@@ -23,12 +23,8 @@ interface Score {
     null_coleadas: number;
     gate_bulls: number;
     articles: number;
-    turn: {
+    round: {
         number: number;
-        round: {
-            number: number;
-            championship: { name: string }
-        }
     };
     coleador: { name: string };
 }
@@ -107,12 +103,12 @@ export default function Index({
                     {/* Individual Scores Section */}
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
-                            <h3 className="text-lg font-bold mb-4 border-b pb-2">Historial de Turnos</h3>
+                            <h3 className="text-lg font-bold mb-4 border-b pb-2">Historial por Rondas</h3>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">R/T</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Ronda</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Coleador</th>
                                             <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">CE</th>
                                             <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">CN</th>
@@ -125,7 +121,7 @@ export default function Index({
                                         {scores.map((score) => (
                                             <tr key={score.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-4 text-sm text-gray-600">
-                                                    R{score.turn.round.number} - T{score.turn.number}
+                                                    Ronda {score.round.number}
                                                 </td>
                                                 <td className="px-4 py-4 text-sm font-bold text-gray-900">{score.coleador.name}</td>
                                                 <td className="px-4 py-4 text-sm text-center font-bold text-green-700">{score.effective_coleadas}</td>
@@ -147,7 +143,7 @@ export default function Index({
                                 
                                 {scores.length === 0 && (
                                     <div className="text-center py-10">
-                                        <p className="text-gray-500">No se han registrado turnos aún.</p>
+                                        <p className="text-gray-500">No se han registrado puntuaciones aún.</p>
                                     </div>
                                 )}
                             </div>

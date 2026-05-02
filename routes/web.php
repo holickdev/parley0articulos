@@ -35,7 +35,6 @@ Route::middleware('auth')->group(function () {
         Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
         Route::resource('payments', \App\Http\Controllers\Admin\PaymentController::class);
         Route::resource('rounds', \App\Http\Controllers\Admin\RoundController::class);
-        Route::resource('turns', \App\Http\Controllers\Admin\TurnController::class);
         
         // Individual score management can still exist but index and create are now scoped
         Route::resource('scores', \App\Http\Controllers\Admin\ScoreController::class)->except(['index', 'create', 'store']);

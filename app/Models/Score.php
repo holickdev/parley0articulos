@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['turn_id', 'coleador_id', 'effective_coleadas', 'null_coleadas', 'gate_bulls', 'articles'])]
+#[Fillable(['round_id', 'coleador_id', 'effective_coleadas', 'null_coleadas', 'gate_bulls', 'articles'])]
 class Score extends Model
 {
     /** @use HasFactory<\Database\Factories\ScoreFactory> */
@@ -29,11 +29,11 @@ class Score extends Model
     }
 
     /**
-     * Get the turn that owns the score.
+     * Get the round that owns the score.
      */
-    public function turn(): BelongsTo
+    public function round(): BelongsTo
     {
-        return $this->belongsTo(Turn::class);
+        return $this->belongsTo(Round::class);
     }
 
     /**
