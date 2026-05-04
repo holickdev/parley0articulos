@@ -22,7 +22,7 @@ class PaymentController extends Controller
             'identification' => 'required|string|max:20',
             'bank' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
-            'reference' => 'required|string|max:255|unique:payments,reference',
+            'reference' => 'required|string|max:255',
             'amount_bs' => 'required|numeric|min:0',
             'payment_date' => 'required|date',
         ]);
@@ -38,7 +38,7 @@ class PaymentController extends Controller
             'identification' => 'required|string|max:20',
             'bank' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
-            'reference' => 'required|string|max:255|unique:payments,reference,' . $payment->id,
+            'reference' => 'required|string|max:255',
             'amount_bs' => 'required|numeric|min:0',
             'payment_date' => 'required|date',
         ]);

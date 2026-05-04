@@ -62,18 +62,32 @@ export default function Index({ championships }: { championships: Championship[]
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-between items-center border-t pt-4">
+                                        <div className="flex flex-col gap-2 border-t pt-4">
+                                            <div className="flex justify-between items-center">
+                                                <Link
+                                                    href={route('admin.championships.entries.create', championship.id)}
+                                                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none transition ease-in-out duration-150"
+                                                >
+                                                    Registrar Cuadro
+                                                </Link>
+                                                <Link
+                                                    href={route('admin.championships.edit', championship.id)}
+                                                    className="text-sm font-medium text-gray-600 hover:text-indigo-900"
+                                                >
+                                                    Configuración
+                                                </Link>
+                                            </div>
                                             <Link
-                                                href={route('admin.championships.scores.index', championship.id)}
-                                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition ease-in-out duration-150"
+                                                href={route('admin.championships.entries.index', championship.id)}
+                                                className="inline-flex justify-center items-center px-3 py-2 border border-green-600 text-sm leading-4 font-medium rounded-md text-green-600 bg-white hover:bg-green-50 focus:outline-none transition ease-in-out duration-150"
                                             >
-                                                Ver Puntuaciones
+                                                Ver Cuadros
                                             </Link>
                                             <Link
-                                                href={route('admin.championships.edit', championship.id)}
-                                                className="text-sm font-medium text-gray-600 hover:text-indigo-900"
+                                                href={route('admin.championships.scores.index', championship.id)}
+                                                className="inline-flex justify-center items-center px-3 py-2 border border-indigo-600 text-sm leading-4 font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none transition ease-in-out duration-150"
                                             >
-                                                Configuración
+                                                Ver Puntuaciones
                                             </Link>
                                         </div>
                                     </div>

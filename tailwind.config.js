@@ -15,6 +15,14 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            colors: {
+                'parley-red': '#8B1E1E',     // El color del círculo exterior
+                'parley-gold': '#B38B4D',    // El color de las espigas y herraduras
+                'parley-cream': '#FDF8F1',   // El color del fondo de las letras
+                'parley-brown': '#2A1B15',   // Para el texto y sombras
+            }
+
+
         },
     },
 

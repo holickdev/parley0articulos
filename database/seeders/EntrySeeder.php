@@ -13,31 +13,41 @@ class EntrySeeder extends Seeder
 {
     public function run(): void
     {
-        $championships = Championship::all();
-        $coleadores = Coleador::all();
+        $championships = Championship::with('coleadores')->get();
 
         foreach ($championships as $championship) {
-            $count = $championship->status === 'finished' ? 5 : 15;
+            // Determine number of entries to seed based on status
+            $count = $championship->status === 'finished' ? 5 : 12;
+            
+            $participants = $championship->coleadores;
+            
+            if ($participants->count() < $championship->coleadores_count) {
+                // Not enough participants in the championship to form a valid entry based on coleadores_count
+                continue;
+            }
 
             for ($i = 1; $i <= $count; $i++) {
                 $cedula = 'V-' . (20000000 + $championship->id * 100 + $i);
 
-                $customer = Customer::create([
-                    'identification' => $cedula,
-                    'name' => 'Cliente ' . $championship->id . '-' . $i,
-                    'phone' => '0414' . rand(1000000, 9999999),
-                ]);
+                $customer = Customer::firstOrCreate(
+                    ['identification' => $cedula],
+                    [
+                        'name' => 'Cliente ' . $championship->id . '-' . $i,
+                        'phone' => '0414' . rand(1000000, 9999999),
+                    ]
+                );
 
                 $payment = Payment::create([
                     'identification' => $cedula,
                     'bank' => 'Banesco',
                     'phone' => $customer->phone,
-                    'reference' => 'REF-' . $championship->id . '-' . $i . '-' . rand(100, 999),
+                    'reference' => 'REF-' . $championship->id . '-' . $i . '-' . rand(1000, 9999),
                     'amount_bs' => $championship->entry_price,
                     'payment_date' => now(),
                 ]);
 
-                $selectedIds = $coleadores->random($championship->coleadores_count)->pluck('id')->toArray();
+                // Select exactly the required number of coleadores from those associated with this championship
+                $selectedIds = $participants->random($championship->coleadores_count)->pluck('id')->toArray();
                 sort($selectedIds);
                 $hash = implode('-', $selectedIds);
 

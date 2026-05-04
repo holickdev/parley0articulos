@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { FormEventHandler } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import InputLabel from '@/Components/InputLabel';
@@ -13,18 +13,6 @@ interface Championship {
     coleadores_count: number;
 }
 
-interface Customer {
-    id: number;
-    name: string;
-    identification: string;
-}
-
-interface Payment {
-    id: number;
-    reference: string;
-    amount_bs: string;
-}
-
 interface Coleador {
     id: number;
     name: string;
@@ -34,44 +22,27 @@ interface Entry {
     id: number;
     name: string;
     status: 'pending' | 'approved' | 'rejected';
-    championship_id: number;
-    customer_id: number;
-    payment_id: number;
     coleadores: Coleador[];
 }
 
 interface Props {
+    championship: Championship;
     entry: Entry;
-    championships: Championship[];
-    customers: Customer[];
-    payments: Payment[];
     coleadores: Coleador[];
 }
 
-export default function Edit({ entry, championships, customers, payments, coleadores }: Props) {
+export default function Edit({ championship, entry, coleadores }: Props) {
     const { data, setData, put, processing, errors } = useForm({
-        championship_id: entry.championship_id.toString(),
-        customer_id: entry.customer_id.toString(),
-        payment_id: entry.payment_id.toString(),
         name: entry.name,
         status: entry.status,
         coleadores: entry.coleadores.map(c => c.id),
     });
 
-    const [selectedChampionship, setSelectedChampionship] = useState<Championship | null>(
-        championships.find(c => c.id === entry.championship_id) || null
-    );
-
-    useEffect(() => {
-        const champ = championships.find(c => c.id === parseInt(data.championship_id));
-        setSelectedChampionship(champ || null);
-    }, [data.championship_id]);
-
     const handleColeadorToggle = (id: number) => {
         if (data.coleadores.includes(id)) {
             setData('coleadores', data.coleadores.filter(itemId => itemId !== id));
         } else {
-            if (selectedChampionship && data.coleadores.length < selectedChampionship.coleadores_count) {
+            if (data.coleadores.length < championship.coleadores_count) {
                 setData('coleadores', [...data.coleadores, id]);
             }
         }
@@ -79,18 +50,26 @@ export default function Edit({ entry, championships, customers, payments, colead
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        put(route('admin.entries.update', entry.id));
+        put(route('admin.championships.entries.update', [championship.id, entry.id]));
     };
 
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Editar Cuadro #{entry.id}
-                </h2>
+                <div>
+                    <Link 
+                        href={route('admin.championships.entries.index', championship.id)}
+                        className="text-sm text-indigo-600 hover:text-indigo-900 mb-2 block"
+                    >
+                        &larr; Volver a Cuadros
+                    </Link>
+                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                        Editar Cuadro: {entry.name}
+                    </h2>
+                </div>
             }
         >
-            <Head title="Editar Cuadro" />
+            <Head title={`Editar Cuadro - ${entry.name}`} />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -113,54 +92,6 @@ export default function Edit({ entry, championships, customers, payments, colead
                                     </div>
 
                                     <div>
-                                        <InputLabel htmlFor="championship_id" value="Campeonato" />
-                                        <select
-                                            id="championship_id"
-                                            value={data.championship_id}
-                                            onChange={(e) => setData('championship_id', e.target.value)}
-                                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                            required
-                                        >
-                                            {championships.map((c) => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                        <InputError message={errors.championship_id} className="mt-2" />
-                                    </div>
-
-                                    <div>
-                                        <InputLabel htmlFor="customer_id" value="Cliente" />
-                                        <select
-                                            id="customer_id"
-                                            value={data.customer_id}
-                                            onChange={(e) => setData('customer_id', e.target.value)}
-                                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                            required
-                                        >
-                                            {customers.map((c) => (
-                                                <option key={c.id} value={c.id}>{c.identification} - {c.name}</option>
-                                            ))}
-                                        </select>
-                                        <InputError message={errors.customer_id} className="mt-2" />
-                                    </div>
-
-                                    <div>
-                                        <InputLabel htmlFor="payment_id" value="Referencia de Pago" />
-                                        <select
-                                            id="payment_id"
-                                            value={data.payment_id}
-                                            onChange={(e) => setData('payment_id', e.target.value)}
-                                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                            required
-                                        >
-                                            {payments.map((p) => (
-                                                <option key={p.id} value={p.id}>{p.reference} ({p.amount_bs} Bs.)</option>
-                                            ))}
-                                        </select>
-                                        <InputError message={errors.payment_id} className="mt-2" />
-                                    </div>
-
-                                    <div>
                                         <InputLabel htmlFor="status" value="Estado" />
                                         <select
                                             id="status"
@@ -174,22 +105,26 @@ export default function Edit({ entry, championships, customers, payments, colead
                                         </select>
                                         <InputError message={errors.status} className="mt-2" />
                                     </div>
+                                    
+                                    <div className="bg-gray-50 p-4 rounded-md">
+                                        <h4 className="text-sm font-bold text-gray-700 mb-2">Información del Campeonato</h4>
+                                        <p className="text-sm text-gray-600">Nombre: {championship.name}</p>
+                                        <p className="text-sm text-gray-600">Coleadores por cuadro: {championship.coleadores_count}</p>
+                                    </div>
                                 </div>
 
                                 {/* Selección de Coleadores */}
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
                                         <InputLabel value="Seleccionar Coleadores" />
-                                        {selectedChampionship && (
-                                            <span className="text-sm font-medium text-gray-600">
-                                                Seleccionados: {data.coleadores.length} / {selectedChampionship.coleadores_count}
-                                            </span>
-                                        )}
+                                        <span className="text-sm font-medium text-gray-600">
+                                            Seleccionados: {data.coleadores.length} / {championship.coleadores_count}
+                                        </span>
                                     </div>
                                     <div className="border rounded-md p-4 max-h-[400px] overflow-y-auto space-y-2">
                                         {coleadores.map((coleador) => {
                                             const isSelected = data.coleadores.includes(coleador.id);
-                                            const isDisabled = !isSelected && selectedChampionship && data.coleadores.length >= selectedChampionship.coleadores_count;
+                                            const isDisabled = !isSelected && data.coleadores.length >= championship.coleadores_count;
                                             
                                             return (
                                                 <label 
@@ -202,7 +137,7 @@ export default function Edit({ entry, championships, customers, payments, colead
                                                         type="checkbox"
                                                         checked={isSelected}
                                                         onChange={() => handleColeadorToggle(coleador.id)}
-                                                        disabled={isDisabled || !selectedChampionship}
+                                                        disabled={isDisabled}
                                                         className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
                                                     />
                                                     <span className="ml-2 text-sm text-gray-700">{coleador.name}</span>
@@ -215,7 +150,7 @@ export default function Edit({ entry, championships, customers, payments, colead
                             </div>
 
                             <div className="mt-8 flex items-center justify-end">
-                                <Link href={route('admin.entries.index')}>
+                                <Link href={route('admin.championships.entries.index', championship.id)}>
                                     <SecondaryButton>Cancelar</SecondaryButton>
                                 </Link>
                                 <PrimaryButton className="ml-4" disabled={processing}>

@@ -30,12 +30,13 @@ Route::middleware('auth')->group(function () {
         Route::get('championships/{championship}/scores', [\App\Http\Controllers\Admin\ScoreController::class, 'index'])->name('championships.scores.index');
         Route::get('championships/{championship}/scores/create', [\App\Http\Controllers\Admin\ScoreController::class, 'create'])->name('championships.scores.create');
         Route::post('championships/{championship}/scores', [\App\Http\Controllers\Admin\ScoreController::class, 'store'])->name('championships.scores.store');
-        
-        Route::resource('entries', \App\Http\Controllers\Admin\EntryController::class);
+
+        Route::resource('championships.entries', \App\Http\Controllers\Admin\EntryController::class);
+
         Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
         Route::resource('payments', \App\Http\Controllers\Admin\PaymentController::class);
         Route::resource('rounds', \App\Http\Controllers\Admin\RoundController::class);
-        
+
         // Individual score management can still exist but index and create are now scoped
         Route::resource('scores', \App\Http\Controllers\Admin\ScoreController::class)->except(['index', 'create', 'store']);
     });

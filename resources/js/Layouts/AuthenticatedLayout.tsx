@@ -46,12 +46,6 @@ export default function Authenticated({
                                     Coleadores
                                 </NavLink>
                                 <NavLink
-                                    href={route('admin.entries.index')}
-                                    active={route().current('admin.entries.*')}
-                                >
-                                    Cuadros
-                                </NavLink>
-                                <NavLink
                                     href={route('admin.customers.index')}
                                     active={route().current('admin.customers.*')}
                                 >
@@ -184,12 +178,6 @@ export default function Authenticated({
                             active={route().current('admin.coleadores.*')}
                         >
                             Coleadores
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('admin.entries.index')}
-                            active={route().current('admin.entries.*')}
-                        >
-                            Cuadros
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             href={route('admin.customers.index')}

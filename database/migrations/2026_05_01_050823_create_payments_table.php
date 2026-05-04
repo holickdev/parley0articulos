@@ -20,8 +20,6 @@ return new class extends Migration
             $table->decimal('amount_bs', 15, 2);
             $table->date('payment_date');
             $table->timestamps();
-
-            $table->unique(['bank', 'reference']);
         });
     }
 
