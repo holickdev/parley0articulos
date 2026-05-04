@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
-import { FormEventHandler, useState, useMemo } from 'react';
+import { FormEventHandler, useState, useMemo, Fragment } from 'react';
 import TextInput from '@/Components/TextInput';
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
@@ -106,8 +106,10 @@ export default function Index({
     const processedColeadores = useMemo(() => {
         return coleadores.map(coleador => {
             let persistedCE = 0, persistedCN = 0, persistedTP = 0, persistedAR = 0;
+            // Solo sumamos para el ordenamiento lo que está YA GUARDADO (scoresMap)
+            // Esto evita que las filas salten mientras el usuario escribe
             filteredRounds.forEach(r => {
-                const s = data.scores[r.id]?.[coleador.id];
+                const s = scoresMap[r.id]?.[coleador.id];
                 persistedCE += Number(s?.effective_coleadas || 0);
                 persistedCN += Number(s?.null_coleadas || 0);
                 persistedTP += Number(s?.gate_bulls || 0);
@@ -133,7 +135,7 @@ export default function Index({
             if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [coleadores, search, data.scores, filteredRounds, sortBy, sortDirection]);
+    }, [coleadores, search, scoresMap, filteredRounds, sortBy, sortDirection]);
 
     const totalPages = Math.ceil(processedColeadores.length / itemsPerPage);
     const paginatedColeadores = processedColeadores.slice(
@@ -415,12 +417,12 @@ export default function Index({
                                     </tr>
                                     <tr className="bg-gray-100 text-[10px] uppercase font-bold text-gray-700">
                                         {filteredRounds.map(round => (
-                                            <>
-                                                <th key={`ce-${round.id}`} className="border-b border-r border-gray-300 p-1 text-center bg-green-100 w-10">CE</th>
-                                                <th key={`cn-${round.id}`} className="border-b border-r border-gray-300 p-1 text-center bg-red-100 w-10">CN</th>
-                                                <th key={`tp-${round.id}`} className="border-b border-r border-gray-300 p-1 text-center bg-blue-100 w-10">TP</th>
-                                                <th key={`ar-${round.id}`} className="border-b border-r border-gray-300 p-1 text-center bg-yellow-100 w-10">AR</th>
-                                            </>
+                                            <Fragment key={`sub-header-${round.id}`}>
+                                                <th className="border-b border-r border-gray-300 p-1 text-center bg-green-100 w-10">CE</th>
+                                                <th className="border-b border-r border-gray-300 p-1 text-center bg-red-100 w-10">CN</th>
+                                                <th className="border-b border-r border-gray-300 p-1 text-center bg-blue-100 w-10">TP</th>
+                                                <th className="border-b border-r border-gray-300 p-1 text-center bg-yellow-100 w-10">AR</th>
+                                            </Fragment>
                                         ))}
                                         <th className="border-b border-l border-gray-400 p-1 text-center bg-green-200 text-green-900 sticky z-30" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
                                         <th className="border-b border-l border-gray-400 p-1 text-center bg-red-200 text-red-900 sticky z-30" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
@@ -451,7 +453,7 @@ export default function Index({
                                                     const arTotal = sumArticles(s.articles);
                                                     currentAR += arTotal;
                                                     return (
-                                                        <>
+                                                        <Fragment key={`cell-${coleador.id}-${round.id}`}>
                                                             <td className="border-b border-r border-gray-300 p-0 hover:bg-green-200 transition-colors">
                                                                 <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-indigo-500 bg-transparent" 
                                                                     value={s.effective_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'effective_coleadas', e.target.value)} />
@@ -470,7 +472,7 @@ export default function Index({
                                                         >
                                                             {arTotal > 0 ? `-${arTotal}` : '0'}
                                                         </td>
-                                                    </>
+                                                    </Fragment>
                                                 );
                                             })}
                                             <td className={`border-b border-l border-gray-300 p-2 text-center font-bold text-green-900 text-sm sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
@@ -511,7 +513,7 @@ export default function Index({
                         )}
                         
                         {Object.entries(activeArticles).map(([name, points], idx) => (
-                            <div key={idx} className="flex gap-4 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
+                            <div key={`active-article-${idx}-${name}`} className="flex gap-4 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
                                 <div className="w-32 sm:w-48">
                                     <InputLabel value="Nombre" />
                                     <TextInput 
@@ -608,7 +610,7 @@ export default function Index({
                                     <h3 className="text-sm font-bold text-gray-600 mb-2 uppercase">Ronda {round.number}</h3>
                                     <div className="bg-gray-50 rounded-lg p-3 space-y-2">
                                         {Object.entries(roundArticles).map(([name, points], idx) => (
-                                            <div key={idx} className="flex justify-between items-center text-sm">
+                                            <div key={`summary-article-${round.id}-${idx}-${name}`} className="flex justify-between items-center text-sm">
                                                 <span className="text-gray-700 font-medium">{name || '(Sin nombre)'}</span>
                                                 <span className="text-red-600 font-bold">-{points}</span>
                                             </div>
