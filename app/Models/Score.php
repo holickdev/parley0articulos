@@ -24,7 +24,7 @@ class Score extends Model
             'effective_coleadas' => 'integer',
             'null_coleadas' => 'integer',
             'gate_bulls' => 'integer',
-            'articles' => 'integer',
+            'articles' => 'array',
         ];
     }
 

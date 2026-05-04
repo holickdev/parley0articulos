@@ -1,7 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { FormEventHandler } from 'react';
+import SecondaryButton from '@/Components/SecondaryButton';
+import { FormEventHandler, useState, useMemo } from 'react';
+import TextInput from '@/Components/TextInput';
+import Modal from '@/Components/Modal';
+import InputLabel from '@/Components/InputLabel';
 
 interface Championship {
     id: number;
@@ -33,14 +37,14 @@ interface ScoreData {
     effective_coleadas: number | string;
     null_coleadas: number | string;
     gate_bulls: number | string;
-    articles: number | string;
+    articles: Record<string, number>;
 }
 
 interface Props {
     championship: Championship;
     rounds: Round[];
     coleadores: Coleador[];
-    scoresMap: Record<number, Record<number, ScoreData>>;
+    scoresMap: Record<number, Record<number, any>>;
     leaderboard: LeaderboardEntry[];
 }
 
@@ -51,6 +55,22 @@ export default function Index({
     scoresMap, 
     leaderboard 
 }: Props) {
+    const [search, setSearch] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
+    const [sortBy, setSortBy] = useState('ce'); // ce, cn, tp, ar, name
+    const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
+    const [visibleRounds, setVisibleRounds] = useState<number[]>(rounds.map(r => r.id));
+    const [isRoundsMenuOpen, setIsRoundsMenuOpen] = useState(false);
+
+    // Modal state for articles
+    const [isArticlesModalOpen, setIsArticlesModalOpen] = useState(false);
+    const [activeArticleTarget, setActiveArticleTarget] = useState<{roundId: number, coleadorId: number} | null>(null);
+
+    // Modal state for summary
+    const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+    const [summaryColeadorId, setSummaryColeadorId] = useState<number | null>(null);
+
     const { data, setData, post, processing, recentlySuccessful } = useForm({
         scores: rounds.reduce((accR, round) => {
             accR[round.id] = coleadores.reduce((accC, coleador) => {
@@ -59,13 +79,67 @@ export default function Index({
                     effective_coleadas: existing?.effective_coleadas ?? 0,
                     null_coleadas: existing?.null_coleadas ?? 0,
                     gate_bulls: existing?.gate_bulls ?? 0,
-                    articles: existing?.articles ?? 0,
+                    articles: existing?.articles ?? {},
                 };
                 return accC;
             }, {} as Record<number, ScoreData>);
             return accR;
         }, {} as Record<number, Record<number, ScoreData>>)
     });
+
+    const sumArticles = (articles: Record<string, number>) => {
+        return Object.values(articles).reduce((sum, val) => sum + val, 0);
+    };
+
+    const toggleRound = (roundId: number) => {
+        setVisibleRounds(prev => 
+            prev.includes(roundId) 
+                ? prev.filter(id => id !== roundId) 
+                : [...prev, roundId]
+        );
+    };
+
+    const filteredRounds = useMemo(() => {
+        return rounds.filter(r => visibleRounds.includes(r.id));
+    }, [rounds, visibleRounds]);
+
+    const processedColeadores = useMemo(() => {
+        return coleadores.map(coleador => {
+            let persistedCE = 0, persistedCN = 0, persistedTP = 0, persistedAR = 0;
+            filteredRounds.forEach(r => {
+                const s = data.scores[r.id]?.[coleador.id];
+                persistedCE += Number(s?.effective_coleadas || 0);
+                persistedCN += Number(s?.null_coleadas || 0);
+                persistedTP += Number(s?.gate_bulls || 0);
+                persistedAR += sumArticles(s?.articles || {});
+            });
+            const persistedNetCE = persistedCE - persistedAR;
+            return { ...coleador, persistedCE, persistedCN, persistedTP, persistedAR, persistedNetCE };
+        })
+        .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+        .sort((a, b) => {
+            let valA: any, valB: any;
+            
+            switch(sortBy) {
+                case 'name': valA = a.name; valB = b.name; break;
+                case 'ce': valA = a.persistedNetCE; valB = b.persistedNetCE; break;
+                case 'cn': valA = a.persistedCN; valB = b.persistedCN; break;
+                case 'tp': valA = a.persistedTP; valB = b.persistedTP; break;
+                case 'ar': valA = a.persistedAR; valB = b.persistedAR; break;
+                default: valA = a.persistedNetCE; valB = b.persistedNetCE;
+            }
+
+            if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [coleadores, search, data.scores, filteredRounds, sortBy, sortDirection]);
+
+    const totalPages = Math.ceil(processedColeadores.length / itemsPerPage);
+    const paginatedColeadores = processedColeadores.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     const handleInputChange = (roundId: number, coleadorId: number, field: keyof ScoreData, value: string) => {
         const val = value === '' ? '' : parseInt(value);
@@ -81,200 +155,492 @@ export default function Index({
         });
     };
 
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-        post(route('admin.championships.scores.store', championship.id));
+    const handleArticlesChange = (roundId: number, coleadorId: number, articles: Record<string, number>) => {
+        setData('scores', {
+            ...data.scores,
+            [roundId]: {
+                ...data.scores[roundId],
+                [coleadorId]: {
+                    ...data.scores[roundId][coleadorId],
+                    articles: articles
+                }
+            }
+        });
     };
 
-    // Ancho de cada sub-columna de total (en px)
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        post(route('admin.championships.scores.store', championship.id), {
+            preserveScroll: true
+        });
+    };
+
+    const openArticlesModal = (roundId: number, coleadorId: number) => {
+        setActiveArticleTarget({ roundId, coleadorId });
+        setIsArticlesModalOpen(true);
+    };
+
+    const openSummaryModal = (coleadorId: number) => {
+        setSummaryColeadorId(coleadorId);
+        setIsSummaryModalOpen(true);
+    };
+
     const colWidth = 40;
+
+    const PaginationControls = () => (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50 p-4 border-x border-b border-gray-300">
+            <div className="text-sm text-gray-600 font-medium">
+                Mostrando <span className="text-gray-900 font-bold">{paginatedColeadores.length}</span> de <span className="text-gray-900 font-bold">{processedColeadores.length}</span> coleadores
+            </div>
+            {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                    <button 
+                        type="button"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                        disabled={currentPage === 1} 
+                        className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-gray-100 transition-colors"
+                    >
+                        Anterior
+                    </button>
+                    <div className="flex gap-1">
+                        {[...Array(totalPages)].map((_, i) => {
+                            const p = i + 1;
+                            if (totalPages > 7 && Math.abs(p - currentPage) > 2 && p !== 1 && p !== totalPages) {
+                                if (Math.abs(p - currentPage) === 3) return <span key={p} className="px-1 text-gray-400">...</span>;
+                                return null;
+                            }
+                            return (
+                                <button
+                                    key={p}
+                                    type="button"
+                                    onClick={() => setCurrentPage(p)}
+                                    className={`w-8 h-8 rounded-md text-sm font-bold transition-colors ${
+                                        currentPage === p 
+                                            ? 'bg-indigo-600 text-white shadow-sm' 
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {p}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <button 
+                        type="button"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                        disabled={currentPage === totalPages} 
+                        className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-gray-100 transition-colors"
+                    >
+                        Siguiente
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+
+    const activeArticles = activeArticleTarget 
+        ? data.scores[activeArticleTarget.roundId][activeArticleTarget.coleadorId].articles 
+        : {};
+
+    const activeColeadorName = activeArticleTarget 
+        ? coleadores.find(c => c.id === activeArticleTarget.coleadorId)?.name 
+        : '';
+        
+    const activeRoundNumber = activeArticleTarget 
+        ? rounds.find(r => r.id === activeArticleTarget.roundId)?.number 
+        : '';
 
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Cuadro de Puntuaciones: {championship.name}
+                        Puntuaciones: {championship.name}
                     </h2>
                     <div className="flex gap-2">
                         <Link href={route('admin.championships.index')}>
                             <PrimaryButton className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
                         </Link>
-                        <PrimaryButton 
-                            onClick={submit} 
-                            disabled={processing}
-                            className="bg-green-600 hover:bg-green-700"
-                        >
+                        <PrimaryButton onClick={submit} disabled={processing} className="bg-green-600 hover:bg-green-700">
                             {processing ? 'Guardando...' : 'Guardar Todo'}
                         </PrimaryButton>
                     </div>
                 </div>
             }
         >
-            <Head title={`Cuadro de Puntuaciones - ${championship.name}`} />
+            <Head title={`Puntuaciones - ${championship.name}`} />
 
             <div className="py-6">
-                <div className="mx-auto max-w-[99%] sm:px-4 lg:px-6 space-y-6">
-                    
+                <div className="mx-auto max-w-[99%] sm:px-4 lg:px-6 space-y-4">
                     {recentlySuccessful && (
-                        <div className="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50" role="alert">
-                            Cambios guardados correctamente.
+                        <div className="p-4 text-sm text-green-800 rounded-lg bg-green-50 font-bold border border-green-200 shadow-sm">
+                            ✓ Cambios guardados correctamente en la base de datos.
                         </div>
                     )}
 
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg border border-gray-200">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full border-collapse border border-gray-200">
-                                <thead>
-                                    <tr className="bg-gray-100">
-                                        {/* Coleador fijo a la izquierda */}
-                                        <th className="border border-gray-300 p-2 text-left sticky left-0 bg-gray-100 z-30 min-w-[180px] shadow-[2px_0_5px_rgba(0,0,0,0.1)]" rowSpan={2}>
-                                            Coleador
-                                        </th>
-                                        
-                                        {rounds.map(round => (
-                                            <th key={round.id} className="border border-gray-300 p-2 text-center bg-indigo-50 min-w-[160px]" colSpan={4}>
-                                                Ronda {round.number}
-                                            </th>
-                                        ))}
-                                        
-                                        {/* Totales fijos a la derecha */}
-                                        <th 
-                                            className="border border-gray-300 p-2 text-center bg-gray-800 text-white sticky right-0 z-30 shadow-[-2px_0_5px_rgba(0,0,0,0.2)]" 
-                                            colSpan={4}
-                                            style={{ minWidth: colWidth * 4 }}
-                                        >
-                                            TOTALES
-                                        </th>
-                                    </tr>
-                                    <tr className="bg-gray-50 text-[10px] uppercase font-bold text-gray-600">
-                                        {rounds.map(round => (
-                                            <>
-                                                <th key={`ce-${round.id}`} className="border border-gray-300 p-1 text-center bg-green-50 w-10">CE</th>
-                                                <th key={`cn-${round.id}`} className="border border-gray-300 p-1 text-center bg-red-50 w-10">CN</th>
-                                                <th key={`tp-${round.id}`} className="border border-gray-300 p-1 text-center bg-blue-50 w-10">TP</th>
-                                                <th key={`ar-${round.id}`} className="border border-gray-300 p-1 text-center bg-yellow-50 w-10">AR</th>
-                                            </>
-                                        ))}
-                                        {/* Sub-cabeceras de Totales fijas */}
-                                        <th className="border border-gray-300 p-1 text-center bg-green-100 text-green-900 sticky z-30 shadow-[-1px_0_0_rgba(0,0,0,0.1)]" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
-                                        <th className="border border-gray-300 p-1 text-center bg-red-100 text-red-900 sticky z-30" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
-                                        <th className="border border-gray-300 p-1 text-center bg-blue-100 text-blue-900 sticky z-30" style={{ right: colWidth * 1, width: colWidth }}>TP</th>
-                                        <th className="border border-gray-300 p-1 text-center bg-yellow-100 text-yellow-900 sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {coleadores.map((coleador) => {
-                                        let totalCE = 0, totalCN = 0, totalTP = 0, totalAR = 0;
-                                        
-                                        return (
-                                            <tr key={coleador.id} className="hover:bg-gray-50 transition-colors">
-                                                {/* Nombre fijo a la izquierda */}
-                                                <td className="border border-gray-300 p-2 font-bold sticky left-0 bg-white z-20 shadow-[2px_0_5px_rgba(0,0,0,0.05)] text-sm">
-                                                    {coleador.name}
-                                                </td>
-                                                
-                                                {rounds.map(round => {
-                                                    const s = data.scores[round.id]?.[coleador.id] || { effective_coleadas: 0, null_coleadas: 0, gate_bulls: 0, articles: 0 };
-                                                    
-                                                    totalCE += Number(s.effective_coleadas || 0);
-                                                    totalCN += Number(s.null_coleadas || 0);
-                                                    totalTP += Number(s.gate_bulls || 0);
-                                                    totalAR += Number(s.articles || 0);
+                    {/* Toolbar de Data Table */}
+                    <div className="bg-white p-4 rounded-t-lg border-x border-t border-gray-300 shadow-sm flex flex-col lg:flex-row gap-4 justify-between items-center">
+                        <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-700">Ver</span>
+                                <select 
+                                    value={itemsPerPage} 
+                                    onChange={(e) => {
+                                        setItemsPerPage(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    className="border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-md text-sm py-1 pr-8"
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={25}>25</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                </select>
+                                <span className="text-sm font-medium text-gray-700">filas</span>
+                            </div>
 
-                                                    return (
-                                                        <>
-                                                            <td className="border border-gray-200 p-0">
-                                                                <input 
-                                                                    type="text" 
-                                                                    className="w-full border-none p-2 text-center text-sm focus:ring-1 focus:ring-green-500 bg-transparent" 
-                                                                    value={s.effective_coleadas}
-                                                                    onChange={(e) => handleInputChange(round.id, coleador.id, 'effective_coleadas', e.target.value)}
-                                                                />
-                                                            </td>
-                                                            <td className="border border-gray-200 p-0">
-                                                                <input 
-                                                                    type="text" 
-                                                                    className="w-full border-none p-2 text-center text-sm focus:ring-1 focus:ring-red-500 bg-transparent" 
-                                                                    value={s.null_coleadas}
-                                                                    onChange={(e) => handleInputChange(round.id, coleador.id, 'null_coleadas', e.target.value)}
-                                                                />
-                                                            </td>
-                                                            <td className="border border-gray-200 p-0">
-                                                                <input 
-                                                                    type="text" 
-                                                                    className="w-full border-none p-2 text-center text-sm focus:ring-1 focus:ring-blue-500 bg-transparent" 
-                                                                    value={s.gate_bulls}
-                                                                    onChange={(e) => handleInputChange(round.id, coleador.id, 'gate_bulls', e.target.value)}
-                                                                />
-                                                            </td>
-                                                            <td className="border border-gray-200 p-0">
-                                                                <input 
-                                                                    type="text" 
-                                                                    className="w-full border-none p-2 text-center text-sm focus:ring-1 focus:ring-yellow-500 bg-transparent" 
-                                                                    value={s.articles}
-                                                                    onChange={(e) => handleInputChange(round.id, coleador.id, 'articles', e.target.value)}
-                                                                />
-                                                            </td>
-                                                        </>
-                                                    );
-                                                })}
-                                                
-                                                {/* Celdas de Totales fijas a la derecha */}
-                                                <td className="border border-gray-300 p-2 text-center font-bold bg-green-100 text-green-900 text-sm sticky z-20 shadow-[-1px_0_0_rgba(0,0,0,0.1)]" style={{ right: colWidth * 3 }}>{totalCE}</td>
-                                                <td className="border border-gray-300 p-2 text-center font-bold bg-red-100 text-red-900 text-sm sticky z-20" style={{ right: colWidth * 2 }}>{totalCN}</td>
-                                                <td className="border border-gray-300 p-2 text-center font-bold bg-blue-100 text-blue-900 text-sm sticky z-20" style={{ right: colWidth * 1 }}>{totalTP}</td>
-                                                <td className="border border-gray-300 p-2 text-center font-bold bg-yellow-100 text-yellow-900 text-sm sticky right-0 z-20" style={{ right: 0 }}>{totalAR}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-700">Ordenar por</span>
+                                <select 
+                                    value={sortBy} 
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-md text-sm py-1 pr-8"
+                                >
+                                    <option value="name">Nombre</option>
+                                    <option value="ce">Total CE</option>
+                                    <option value="cn">Total CN</option>
+                                    <option value="tp">Total TP</option>
+                                    <option value="ar">Total AR</option>
+                                </select>
+                                <button 
+                                    type="button"
+                                    onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                    className="p-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                                    title={sortDirection === 'asc' ? 'Orden Ascendente' : 'Orden Descendente'}
+                                >
+                                    {sortDirection === 'asc' ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-1v12m0 0l-4-4m4 4l4-4" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Filtro de Rondas */}
+                            <div className="relative">
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsRoundsMenuOpen(!isRoundsMenuOpen)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                    </svg>
+                                    Rondas ({visibleRounds.length})
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${isRoundsMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                {isRoundsMenuOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsRoundsMenuOpen(false)}></div>
+                                        <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-2">
+                                            <div className="mb-2 pb-2 border-b border-gray-100 flex justify-between px-2">
+                                                <button 
+                                                    type="button" 
+                                                    className="text-[10px] text-indigo-600 font-bold hover:underline"
+                                                    onClick={() => setVisibleRounds(rounds.map(r => r.id))}
+                                                >Todas</button>
+                                                <button 
+                                                    type="button" 
+                                                    className="text-[10px] text-red-600 font-bold hover:underline"
+                                                    onClick={() => setVisibleRounds([])}
+                                                >Ninguna</button>
+                                            </div>
+                                            <div className="max-h-60 overflow-y-auto">
+                                                {rounds.map(round => (
+                                                    <label key={round.id} className="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={visibleRounds.includes(round.id)}
+                                                            onChange={() => toggleRound(round.id)}
+                                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                                                        />
+                                                        <span className="ml-2 text-sm text-gray-700">Ronda {round.number}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="w-full lg:max-w-md">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <TextInput
+                                    placeholder="Buscar por nombre de coleador..."
+                                    className="pl-10 w-full"
+                                    value={search}
+                                    onChange={(e) => {
+                                        setSearch(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                            <div className="p-6">
-                                <h3 className="text-lg font-bold mb-4">Ranking por Efectividad (CE)</h3>
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead>
-                                        <tr className="text-left text-xs font-medium text-gray-500 uppercase">
-                                            <th className="py-2">Pos</th>
-                                            <th className="py-2">Coleador</th>
-                                            <th className="py-2 text-center">Total CE</th>
-                                            <th className="py-2 text-center">Total CN</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {leaderboard.map((entry, index) => (
-                                            <tr key={entry.id}>
-                                                <td className="py-2 font-bold">{index + 1}</td>
-                                                <td className="py-2">{entry.name}</td>
-                                                <td className="py-2 text-center font-black text-green-600">{entry.total_effective}</td>
-                                                <td className="py-2 text-center font-medium text-red-600">{entry.total_null}</td>
-                                            </tr>
+                    <div className="overflow-hidden bg-white shadow-sm border border-gray-300">
+                        <PaginationControls />
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full border-separate" style={{ borderSpacing: 0 }}>
+                                <thead>
+                                    <tr className="bg-gray-200">
+                                        <th className="border-b border-r border-gray-400 p-2 text-left sticky left-0 bg-gray-200 z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
+                                        {filteredRounds.map(round => (
+                                            <th key={round.id} className="border-b border-r border-gray-400 p-2 text-center bg-indigo-100 min-w-[160px]" colSpan={4}>Ronda {round.number}</th>
                                         ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                         </div>
-                         
-                         <div className="bg-gray-900 rounded-lg p-6 text-white shadow-lg">
-                            <h3 className="text-xl font-bold mb-4 flex items-center">
-                                <span className="mr-2">📊</span> Resumen
-                            </h3>
-                            <div className="space-y-2 text-sm opacity-90">
-                                <p>Campeonato: <strong>{championship.name}</strong></p>
-                                <p>Rondas: <strong>{championship.rounds_count}</strong></p>
-                                <p className="text-xs italic mt-4">
-                                    * Los totales a la derecha se mantienen fijos para comparar fácilmente el desempeño acumulado.
-                                </p>
-                            </div>
-                         </div>
+                                        <th className="border-b border-l border-gray-800 p-2 text-center bg-gray-800 text-white sticky right-0 z-30" colSpan={4} style={{ minWidth: colWidth * 4 }}>TOTALES</th>
+                                    </tr>
+                                    <tr className="bg-gray-100 text-[10px] uppercase font-bold text-gray-700">
+                                        {filteredRounds.map(round => (
+                                            <>
+                                                <th key={`ce-${round.id}`} className="border-b border-r border-gray-300 p-1 text-center bg-green-100 w-10">CE</th>
+                                                <th key={`cn-${round.id}`} className="border-b border-r border-gray-300 p-1 text-center bg-red-100 w-10">CN</th>
+                                                <th key={`tp-${round.id}`} className="border-b border-r border-gray-300 p-1 text-center bg-blue-100 w-10">TP</th>
+                                                <th key={`ar-${round.id}`} className="border-b border-r border-gray-300 p-1 text-center bg-yellow-100 w-10">AR</th>
+                                            </>
+                                        ))}
+                                        <th className="border-b border-l border-gray-400 p-1 text-center bg-green-200 text-green-900 sticky z-30" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
+                                        <th className="border-b border-l border-gray-400 p-1 text-center bg-red-200 text-red-900 sticky z-30" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
+                                        <th className="border-b border-l border-gray-400 p-1 text-center bg-blue-200 text-blue-900 sticky z-30" style={{ right: colWidth * 1, width: colWidth }}>TP</th>
+                                        <th className="border-b border-l border-gray-400 p-1 text-center bg-yellow-200 text-yellow-900 sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedColeadores.map((coleador, index) => {
+                                        let currentCE = 0, currentCN = 0, currentTP = 0, currentAR = 0;
+                                        const rowBgColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-200';
+                                        
+                                        const ceBg = index % 2 === 0 ? 'bg-green-50' : 'bg-green-100';
+                                        const cnBg = index % 2 === 0 ? 'bg-red-50' : 'bg-red-100';
+                                        const tpBg = index % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100';
+                                        const arBg = index % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100';
+
+                                        return (
+                                            <tr key={coleador.id} className={`${rowBgColor} hover:bg-indigo-200 transition-colors group`}>
+                                                <td className={`border-b border-r border-gray-300 p-2 font-bold sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-indigo-200`}>
+                                                    {coleador.name}
+                                                </td>
+                                                {filteredRounds.map(round => {
+                                                    const s = data.scores[round.id]?.[coleador.id] || { effective_coleadas: 0, null_coleadas: 0, gate_bulls: 0, articles: {} };
+                                                    currentCE += Number(s.effective_coleadas || 0);
+                                                    currentCN += Number(s.null_coleadas || 0);
+                                                    currentTP += Number(s.gate_bulls || 0);
+                                                    const arTotal = sumArticles(s.articles);
+                                                    currentAR += arTotal;
+                                                    return (
+                                                        <>
+                                                            <td className="border-b border-r border-gray-300 p-0 hover:bg-green-200 transition-colors">
+                                                                <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-indigo-500 bg-transparent" 
+                                                                    value={s.effective_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'effective_coleadas', e.target.value)} />
+                                                        </td>
+                                                        <td className="border-b border-r border-gray-300 p-0 hover:bg-red-200 transition-colors">
+                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-indigo-500 bg-transparent" 
+                                                                value={s.null_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'null_coleadas', e.target.value)} />
+                                                        </td>
+                                                        <td className="border-b border-r border-gray-300 p-0 hover:bg-blue-200 transition-colors">
+                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-indigo-500 bg-transparent" 
+                                                                value={s.gate_bulls} onChange={(e) => handleInputChange(round.id, coleador.id, 'gate_bulls', e.target.value)} />
+                                                        </td>
+                                                        <td 
+                                                            className={`border-b border-r border-gray-300 p-2 text-center text-sm cursor-pointer hover:bg-yellow-200 transition-colors font-bold ${arTotal > 0 ? 'text-red-600' : 'text-gray-400'}`}
+                                                            onClick={() => openArticlesModal(round.id, coleador.id)}
+                                                        >
+                                                            {arTotal > 0 ? `-${arTotal}` : '0'}
+                                                        </td>
+                                                    </>
+                                                );
+                                            })}
+                                            <td className={`border-b border-l border-gray-300 p-2 text-center font-bold text-green-900 text-sm sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
+                                            <td className={`border-b border-l border-gray-300 p-2 text-center font-bold text-red-900 text-sm sticky z-20 ${cnBg} hover:bg-red-200 transition-colors group-hover:bg-red-200`} style={{ right: colWidth * 2 }}>{currentCN}</td>
+                                            <td className={`border-b border-l border-gray-300 p-2 text-center font-bold text-blue-900 text-sm sticky z-20 ${tpBg} hover:bg-blue-200 transition-colors group-hover:bg-blue-200`} style={{ right: colWidth * 1 }}>{currentTP}</td>
+                                            <td 
+                                                className={`border-b border-l border-gray-300 p-2 text-center font-bold text-red-700 text-sm sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`} 
+                                                style={{ right: 0 }}
+                                                onClick={() => openSummaryModal(coleador.id)}
+                                            >
+                                                {currentAR > 0 ? `-${currentAR}` : '0'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                </tbody>
+                            </table>
+                        </div>
+                        <PaginationControls />
                     </div>
                 </div>
             </div>
+
+            <Modal show={isArticlesModalOpen} onClose={() => setIsArticlesModalOpen(false)} maxWidth="md">
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-lg font-bold text-gray-900">
+                            Artículos / Restas - Ronda {activeRoundNumber}
+                        </h2>
+                        <span className="text-indigo-600 font-bold">{activeColeadorName}</span>
+                    </div>
+
+                    <div className="space-y-4">
+                        {Object.entries(activeArticles).length === 0 && (
+                            <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 text-gray-500 italic">
+                                No hay artículos registrados para esta ronda.
+                            </div>
+                        )}
+                        
+                        {Object.entries(activeArticles).map(([name, points], idx) => (
+                            <div key={idx} className="flex gap-4 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <div className="w-32 sm:w-48">
+                                    <InputLabel value="Nombre" />
+                                    <TextInput 
+                                        value={name}
+                                        onChange={(e) => {
+                                            const newArticles = { ...activeArticles };
+                                            const val = newArticles[name];
+                                            delete newArticles[name];
+                                            newArticles[e.target.value] = val;
+                                            if (activeArticleTarget) handleArticlesChange(activeArticleTarget.roundId, activeArticleTarget.coleadorId, newArticles);
+                                        }}
+                                        className="w-full mt-1"
+                                        placeholder="Ej. 5B"
+                                    />
+                                </div>
+                                <div className="w-20 sm:w-24">
+                                    <InputLabel value="Puntos" />
+                                    <TextInput 
+                                        type="number"
+                                        min="0"
+                                        value={points.toString()}
+                                        onChange={(e) => {
+                                            const newArticles = { ...activeArticles };
+                                            const val = parseInt(e.target.value) || 0;
+                                            newArticles[name] = Math.max(0, val);
+                                            if (activeArticleTarget) handleArticlesChange(activeArticleTarget.roundId, activeArticleTarget.coleadorId, newArticles);
+                                        }}
+                                        className="w-full mt-1"
+                                    />
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        const newArticles = { ...activeArticles };
+                                        delete newArticles[name];
+                                        if (activeArticleTarget) handleArticlesChange(activeArticleTarget.roundId, activeArticleTarget.coleadorId, newArticles);
+                                    }}
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors mb-0.5"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    const newArticles = { ...activeArticles, "": 0 };
+                                    if (activeArticleTarget) handleArticlesChange(activeArticleTarget.roundId, activeArticleTarget.coleadorId, newArticles);
+                                }}
+                                className="inline-flex items-center text-sm font-bold text-indigo-600 hover:text-indigo-800"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                AGREGAR ARTÍCULO
+                            </button>
+                            
+                            <div className="text-lg font-bold">
+                                Total Resta: <span className="text-red-600">-{sumArticles(activeArticles)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 flex justify-end">
+                        <PrimaryButton onClick={() => setIsArticlesModalOpen(false)}>
+                            Cerrar y Revisar
+                        </PrimaryButton>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal show={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} maxWidth="md">
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-lg font-bold text-gray-900">
+                            Resumen de Artículos
+                        </h2>
+                        <span className="text-indigo-600 font-bold">
+                            {coleadores.find(c => c.id === summaryColeadorId)?.name}
+                        </span>
+                    </div>
+
+                    <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                        {summaryColeadorId && rounds.map(round => {
+                            const roundArticles = data.scores[round.id]?.[summaryColeadorId]?.articles || {};
+                            if (Object.keys(roundArticles).length === 0) return null;
+
+                            return (
+                                <div key={round.id} className="border-l-4 border-indigo-500 pl-4 py-1">
+                                    <h3 className="text-sm font-bold text-gray-600 mb-2 uppercase">Ronda {round.number}</h3>
+                                    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                                        {Object.entries(roundArticles).map(([name, points], idx) => (
+                                            <div key={idx} className="flex justify-between items-center text-sm">
+                                                <span className="text-gray-700 font-medium">{name || '(Sin nombre)'}</span>
+                                                <span className="text-red-600 font-bold">-{points}</span>
+                                            </div>
+                                        ))}
+                                        <div className="pt-2 border-t border-gray-200 flex justify-between items-center font-bold text-sm">
+                                            <span>Total Ronda</span>
+                                            <span className="text-red-700">-{sumArticles(roundArticles)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {summaryColeadorId && rounds.every(r => Object.keys(data.scores[r.id]?.[summaryColeadorId]?.articles || {}).length === 0) && (
+                            <div className="text-center py-8 text-gray-500 italic">
+                                No se encontraron artículos registrados para este coleador.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between items-center">
+                        <div className="text-lg font-bold">
+                            Total Campeonato: <span className="text-red-600">
+                                -{summaryColeadorId ? rounds.reduce((acc, r) => acc + sumArticles(data.scores[r.id]?.[summaryColeadorId]?.articles || {}), 0) : 0}
+                            </span>
+                        </div>
+                        <PrimaryButton onClick={() => setIsSummaryModalOpen(false)}>
+                            Cerrar
+                        </PrimaryButton>
+                    </div>
+                </div>
+            </Modal>
         </AuthenticatedLayout>
     );
 }

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('effective_coleadas')->default(0); // ce
             $table->integer('null_coleadas')->default(0);      // cn
             $table->integer('gate_bulls')->default(0);         // tp
-            $table->integer('articles')->default(0);           // ar
+            $table->json('articles')->nullable();              // ar (JSON: {"5B": 5, "2C": 2})
             $table->timestamps();
 
             // Un coleador solo puede tener una puntuación por ronda

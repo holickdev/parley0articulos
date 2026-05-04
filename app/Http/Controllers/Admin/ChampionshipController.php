@@ -20,9 +20,7 @@ class ChampionshipController extends Controller
 
     public function create()
     {
-        return Inertia::render('Admin/Championships/Create', [
-            'coleadores' => Coleador::orderBy('name')->get()
-        ]);
+        return Inertia::render('Admin/Championships/Create');
     }
 
     public function store(Request $request)
@@ -34,7 +32,7 @@ class ChampionshipController extends Controller
             'entry_price' => 'required|numeric|min:0',
             'status' => 'required|in:open,in_progress,finished',
             'coleadores' => 'required|array|min:1',
-            'coleadores.*' => 'exists:coleadores,id'
+            'coleadores.*' => 'required|string|max:255'
         ]);
 
         return DB::transaction(function () use ($validated) {
@@ -46,7 +44,10 @@ class ChampionshipController extends Controller
                 'status' => $validated['status'],
             ]);
 
-            $championship->coleadores()->sync($validated['coleadores']);
+            $coleadorIds = collect($validated['coleadores'])
+                ->map(fn($name) => Coleador::firstOrCreate(['name' => trim($name)])->id);
+
+            $championship->coleadores()->sync($coleadorIds);
 
             // Crear las rondas automáticamente
             for ($i = 1; $i <= $validated['rounds_count']; $i++) {
@@ -61,7 +62,6 @@ class ChampionshipController extends Controller
     {
         return Inertia::render('Admin/Championships/Edit', [
             'championship' => $championship->load('coleadores'),
-            'coleadores' => Coleador::orderBy('name')->get()
         ]);
     }
 
@@ -74,7 +74,7 @@ class ChampionshipController extends Controller
             'entry_price' => 'required|numeric|min:0',
             'status' => 'required|in:open,in_progress,finished',
             'coleadores' => 'required|array|min:1',
-            'coleadores.*' => 'exists:coleadores,id'
+            'coleadores.*' => 'required|string|max:255'
         ]);
 
         DB::transaction(function () use ($validated, $championship) {
@@ -88,7 +88,10 @@ class ChampionshipController extends Controller
                 'status' => $validated['status'],
             ]);
 
-            $championship->coleadores()->sync($validated['coleadores']);
+            $coleadorIds = collect($validated['coleadores'])
+                ->map(fn($name) => Coleador::firstOrCreate(['name' => trim($name)])->id);
+
+            $championship->coleadores()->sync($coleadorIds);
 
             // Ajustar rondas si cambió el número
             if ($validated['rounds_count'] > $oldRoundsCount) {
