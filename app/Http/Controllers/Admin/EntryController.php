@@ -10,7 +10,9 @@ use App\Models\Payment;
 use App\Models\Coleador;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
+use Illuminate\Validation\ValidationException;
 
 class EntryController extends Controller
 {
@@ -32,6 +34,43 @@ class EntryController extends Controller
         ]);
     }
 
+    public function checkCombination(Request $request, Championship $championship)
+    {
+        $request->validate([
+            'coleadores' => 'required|array|size:' . $championship->coleadores_count,
+            'coleadores.*' => 'exists:coleadores,id'
+        ]);
+
+        $coleadores = $request->coleadores;
+        sort($coleadores);
+        $hash = implode('-', $coleadores);
+
+        // 1. Check if already exists in database
+        $exists = Entry::where('championship_id', $championship->id)
+            ->where('combination_hash', $hash)
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'coleadores' => 'Esta combinación de coleadores ya ha sido registrada en este campeonato.'
+            ]);
+        }
+
+        // 2 y 3. Verificación atómica y Bloqueo en un solo paso
+        $lockKey = "lock_entry_{$championship->id}_{$hash}";
+
+        // Cache::add solo devuelve true si la llave NO existía y la pudo crear.
+        $lockAcquired = Cache::add($lockKey, true, now()->addMinutes(10));
+
+        if (!$lockAcquired) {
+            throw ValidationException::withMessages([
+                'coleadores' => 'Esta combinación está siendo procesada por otro usuario en este momento. Intenta de nuevo en unos minutos.'
+            ]);
+        }
+
+        return response()->json(['message' => 'Combinación disponible', 'hash' => $hash]);
+    }
+
     public function store(Request $request, Championship $championship)
     {
         $validated = $request->validate([
@@ -39,58 +78,83 @@ class EntryController extends Controller
             'customer_identification' => 'required|string',
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'required|string|max:255',
-            
+
             // Payment data
             'payment_bank' => 'required|string|max:255',
             'payment_reference' => 'required|string|max:255',
             'payment_amount_bs' => 'required|numeric|min:0',
             'payment_date' => 'required|date',
             'payment_phone' => 'required|string|max:255',
-            
+
             // Entry data
             'entry_name' => 'required|string|max:255',
             'coleadores' => 'required|array|size:' . $championship->coleadores_count,
             'coleadores.*' => 'exists:coleadores,id'
         ]);
 
-        return DB::transaction(function () use ($validated, $championship) {
-            // 1. Find or create Customer
-            $customer = Customer::firstOrCreate(
-                ['identification' => $validated['customer_identification']],
-                [
-                    'name' => $validated['customer_name'],
-                    'phone' => $validated['customer_phone']
-                ]
-            );
+        sort($validated['coleadores']);
+        $hash = implode('-', $validated['coleadores']);
+        $lockKey = "lock_entry_{$championship->id}_{$hash}";
 
-            // 2. Create Payment
-            $payment = Payment::create([
-                'identification' => $validated['customer_identification'],
-                'bank' => $validated['payment_bank'],
-                'phone' => $validated['payment_phone'],
-                'reference' => $validated['payment_reference'],
-                'amount_bs' => $validated['payment_amount_bs'],
-                'payment_date' => $validated['payment_date'],
-            ]);
+        try {
+            return DB::transaction(function () use ($validated, $championship, $hash, $lockKey) {
+                // Double check existence inside transaction
+                $exists = Entry::where('championship_id', $championship->id)
+                    ->where('combination_hash', $hash)
+                    ->lockForUpdate()
+                    ->exists();
 
-            // 3. Create Entry
-            sort($validated['coleadores']);
-            $hash = implode('-', $validated['coleadores']);
+                if ($exists) {
+                    throw ValidationException::withMessages([
+                        'coleadores' => 'Esta combinación de coleadores acaba de ser registrada por otro usuario.'
+                    ]);
+                }
 
-            $entry = Entry::create([
-                'championship_id' => $championship->id,
-                'customer_id' => $customer->id,
-                'payment_id' => $payment->id,
-                'name' => $validated['entry_name'],
-                'status' => 'pending',
-                'combination_hash' => $hash,
-            ]);
+                // 1. Find or create Customer
+                $customer = Customer::firstOrCreate(
+                    ['identification' => $validated['customer_identification']],
+                    [
+                        'name' => $validated['customer_name'],
+                        'phone' => $validated['customer_phone']
+                    ]
+                );
 
-            $entry->coleadores()->sync($validated['coleadores']);
+                // 2. Create Payment
+                $payment = Payment::create([
+                    'identification' => $validated['customer_identification'],
+                    'bank' => $validated['payment_bank'],
+                    'phone' => $validated['payment_phone'],
+                    'reference' => $validated['payment_reference'],
+                    'amount_bs' => $validated['payment_amount_bs'],
+                    'payment_date' => $validated['payment_date'],
+                ]);
 
-            return redirect()->route('admin.championships.entries.index', $championship->id)
-                ->with('success', 'Cuadro, Cliente y Pago registrados con éxito.');
-        });
+                // 3. Create Entry
+                $entry = Entry::create([
+                    'championship_id' => $championship->id,
+                    'customer_id' => $customer->id,
+                    'payment_id' => $payment->id,
+                    'name' => $validated['entry_name'],
+                    'status' => 'pending',
+                    'combination_hash' => $hash,
+                ]);
+
+                $entry->coleadores()->sync($validated['coleadores']);
+
+                // Release lock
+                Cache::forget($lockKey);
+
+                return redirect()->route('admin.championships.entries.index', $championship->id)
+                    ->with('success', 'Cuadro, Cliente y Pago registrados con éxito.');
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == 23000) { // Unique constraint violation
+                throw ValidationException::withMessages([
+                    'coleadores' => 'Lo sentimos, esta combinación de coleadores ya ha sido registrada.'
+                ]);
+            }
+            throw $e;
+        }
     }
 
     public function edit(Championship $championship, Entry $entry)

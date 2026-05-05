@@ -1,11 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
+import axios from 'axios';
 
 interface Coleador {
     id: number;
@@ -26,8 +27,10 @@ interface Props {
 
 export default function Create({ championship }: Props) {
     const [step, setStep] = useState(1);
+    const [isValidating, setIsValidating] = useState(false);
+    const [validationError, setValidationError] = useState<string | undefined>(undefined);
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, setError, clearErrors } = useForm({
         // Customer
         customer_identification: '',
         customer_name: '',
@@ -44,12 +47,39 @@ export default function Create({ championship }: Props) {
     });
 
     const handleColeadorToggle = (id: number) => {
+        setValidationError(undefined);
+        clearErrors('coleadores');
         if (data.coleadores.includes(id)) {
             setData('coleadores', data.coleadores.filter(itemId => itemId !== id));
         } else {
             if (data.coleadores.length < championship.coleadores_count) {
                 setData('coleadores', [...data.coleadores, id]);
             }
+        }
+    };
+
+    const validateCombination = async () => {
+        if (data.coleadores.length !== championship.coleadores_count) return;
+
+        setIsValidating(true);
+        setValidationError(undefined);
+        clearErrors('coleadores');
+
+        try {
+            await axios.post(route('admin.championships.entries.check', championship.id), {
+                coleadores: data.coleadores
+            });
+            nextStep();
+        } catch (error: any) {
+            if (error.response && error.response.data && error.response.data.errors) {
+                const msg = error.response.data.errors.coleadores[0];
+                setValidationError(msg);
+                setError('coleadores', msg);
+            } else {
+                setValidationError('Error al validar la combinación. Intente de nuevo.');
+            }
+        } finally {
+            setIsValidating(false);
         }
     };
 
@@ -197,15 +227,19 @@ export default function Create({ championship }: Props) {
                                                 );
                                             })}
                                         </div>
-                                        <InputError message={errors.coleadores} className="mt-2" />
+                                        <InputError message={errors.coleadores || validationError} className="mt-2" />
                                     </div>
 
                                     <div className="flex justify-between">
                                         <SecondaryButton type="button" onClick={prevStep}>
                                             Anterior
                                         </SecondaryButton>
-                                        <PrimaryButton type="button" onClick={nextStep} disabled={data.coleadores.length !== championship.coleadores_count || !data.entry_name}>
-                                            Siguiente: Datos de Pago
+                                        <PrimaryButton 
+                                            type="button" 
+                                            onClick={validateCombination} 
+                                            disabled={data.coleadores.length !== championship.coleadores_count || !data.entry_name || isValidating}
+                                        >
+                                            {isValidating ? 'Validando...' : 'Siguiente: Datos de Pago'}
                                         </PrimaryButton>
                                     </div>
                                 </div>
