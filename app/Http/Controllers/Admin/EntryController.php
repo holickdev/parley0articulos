@@ -104,6 +104,18 @@ class EntryController extends Controller
 
     public function update(Request $request, Championship $championship, Entry $entry)
     {
+        // If it's a status-only update (usually from the Index page)
+        if ($request->has('status') && !$request->has('name')) {
+            $validated = $request->validate([
+                'status' => 'required|in:pending,approved,rejected',
+            ]);
+
+            $entry->update($validated);
+
+            return redirect()->route('admin.championships.entries.index', $championship->id)
+                ->with('success', 'Estado del cuadro actualizado con éxito.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'status' => 'required|in:pending,approved,rejected',
