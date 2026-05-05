@@ -45,7 +45,7 @@ class EntryController extends Controller
         sort($coleadores);
         $hash = implode('-', $coleadores);
 
-        // 1. Check if already exists in database
+        // 1. Verificación inicial contra la base de datos
         $exists = Entry::where('championship_id', $championship->id)
             ->where('combination_hash', $hash)
             ->exists();
@@ -56,16 +56,24 @@ class EntryController extends Controller
             ]);
         }
 
-        // 2 y 3. Verificación atómica y Bloqueo en un solo paso
+        // 2. Control de concurrencia atómico basado en sesión
         $lockKey = "lock_entry_{$championship->id}_{$hash}";
+        $sessionId = session()->getId();
 
-        // Cache::add solo devuelve true si la llave NO existía y la pudo crear.
-        $lockAcquired = Cache::add($lockKey, true, now()->addMinutes(10));
+        $lockAcquired = Cache::add($lockKey, $sessionId, now()->addMinutes(10));
 
         if (!$lockAcquired) {
-            throw ValidationException::withMessages([
-                'coleadores' => 'Esta combinación está siendo procesada por otro usuario en este momento. Intenta de nuevo en unos minutos.'
-            ]);
+            // Si la llave existe, verificamos si le pertenece al mismo usuario que hizo la petición
+            $existingLockOwner = Cache::get($lockKey);
+
+            if ($existingLockOwner !== $sessionId) {
+                throw ValidationException::withMessages([
+                    'coleadores' => 'Esta combinación está siendo procesada por otro usuario en este momento. Intenta de nuevo en unos minutos.'
+                ]);
+            }
+
+            // Si es el mismo usuario (retrocedió en el formulario), le renovamos el tiempo
+            Cache::put($lockKey, $sessionId, now()->addMinutes(10));
         }
 
         return response()->json(['message' => 'Combinación disponible', 'hash' => $hash]);
@@ -95,6 +103,14 @@ class EntryController extends Controller
         sort($validated['coleadores']);
         $hash = implode('-', $validated['coleadores']);
         $lockKey = "lock_entry_{$championship->id}_{$hash}";
+
+        // NUEVO: Verificación de respeto de bloqueo (Cierra el vector de ataque directo)
+        $lockOwner = Cache::get($lockKey);
+        if ($lockOwner && $lockOwner !== session()->getId()) {
+            throw ValidationException::withMessages([
+                'coleadores' => 'Esta combinación se encuentra actualmente reservada por otro usuario. Intente más tarde.'
+            ]);
+        }
 
         try {
             return DB::transaction(function () use ($validated, $championship, $hash, $lockKey) {
@@ -142,7 +158,9 @@ class EntryController extends Controller
                 $entry->coleadores()->sync($validated['coleadores']);
 
                 // Release lock
-                Cache::forget($lockKey);
+                if (Cache::get($lockKey) === session()->getId()) {
+                    Cache::forget($lockKey);
+                }
 
                 return redirect()->route('admin.championships.entries.index', $championship->id)
                     ->with('success', 'Cuadro, Cliente y Pago registrados con éxito.');
