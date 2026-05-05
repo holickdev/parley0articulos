@@ -411,10 +411,10 @@ export default function Index({
                         <div className="overflow-x-auto">
                             <table className="min-w-full border-separate" style={{ borderSpacing: 0 }}>
                                 <thead>
-                                    <tr className="bg-parley-cream/50">
-                                        <th className="border-b border-r border-parley-gold/70 p-2 text-left sticky left-0 bg-parley-cream/50 z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
+                                    <tr className="bg-parley-cream">
+                                        <th className="border-b border-r border-parley-gold/70 p-2 text-left sticky left-0 bg-parley-cream z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
                                         {filteredRounds.map(round => (
-                                            <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-parley-gold/20 min-w-[160px]" colSpan={4}>Ronda {round.number}</th>
+                                            <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-[#F2E8D9] min-w-[160px]" colSpan={4}>Ronda {round.number}</th>
                                         ))}
                                         <th className="border-b border-l border-parley-brown p-2 text-center bg-parley-brown text-white sticky right-0 z-30" colSpan={4} style={{ minWidth: colWidth * 4 }}>TOTALES</th>
                                     </tr>
@@ -436,7 +436,7 @@ export default function Index({
                                 <tbody>
                                     {paginatedColeadores.map((coleador, index) => {
                                         let currentCE = 0, currentCN = 0, currentTP = 0, currentAR = 0;
-                                        const rowBgColor = index % 2 === 0 ? 'bg-white' : 'bg-parley-cream/50';
+                                        const rowBgColor = index % 2 === 0 ? 'bg-white' : 'bg-parley-cream';
                                         
                                         const ceBg = index % 2 === 0 ? 'bg-green-50' : 'bg-green-100';
                                         const cnBg = index % 2 === 0 ? 'bg-red-50' : 'bg-red-100';
@@ -444,8 +444,8 @@ export default function Index({
                                         const arBg = index % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100';
 
                                         return (
-                                            <tr key={coleador.id} className={`${rowBgColor} hover:bg-parley-gold/20 transition-colors group`}>
-                                                <td className={`border-b border-r border-parley-gold/50 p-2 font-bold sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-parley-gold/20`}>
+                                            <tr key={coleador.id} className={`${rowBgColor} hover:bg-[#F2E8D9] transition-colors group`}>
+                                                <td className={`border-b border-r border-parley-gold/50 p-2 font-bold sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-[#F2E8D9]`}>
                                                     {coleador.name}
                                                 </td>
                                                 {filteredRounds.map(round => {

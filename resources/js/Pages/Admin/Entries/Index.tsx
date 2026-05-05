@@ -147,7 +147,7 @@ export default function Index({ championship, entries }: { championship: Champio
             <Head title={`Cuadros - ${championship.name}`} />
 
             <div className="py-8">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
                         <Link 
                             href={route('admin.championships.index')}
@@ -155,12 +155,12 @@ export default function Index({ championship, entries }: { championship: Champio
                         >
                             &larr; Volver a Campeonatos
                         </Link>
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-                            <h1 className="text-3xl font-bold text-parley-brown leading-tight">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-parley-brown leading-tight">
                                 Cuadros: {championship.name}
                             </h1>
-                            <Link href={route('admin.championships.entries.create', championship.id)}>
-                                <PrimaryButton>
+                            <Link href={route('admin.championships.entries.create', championship.id)} className="w-full sm:w-auto">
+                                <PrimaryButton className="w-full sm:w-auto justify-center py-3 sm:py-2 text-sm">
                                     Registrar Cuadro <span className="ml-2 text-lg">+</span>
                                 </PrimaryButton>
                             </Link>

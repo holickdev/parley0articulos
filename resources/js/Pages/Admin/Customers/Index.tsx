@@ -110,14 +110,14 @@ export default function Index({ customers }: { customers: Customer[] }) {
             <Head title="Clientes" />
 
             <div className="py-8">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-parley-brown leading-tight">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-parley-brown leading-tight">
                                 Clientes
                             </h1>
                         </div>
-                        <PrimaryButton onClick={openCreateModal}>
+                        <PrimaryButton onClick={openCreateModal} className="w-full sm:w-auto justify-center py-3 sm:py-2 text-sm">
                             Registrar Cliente <span className="ml-2 text-lg">+</span>
                         </PrimaryButton>
                     </div>

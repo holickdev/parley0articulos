@@ -46,15 +46,15 @@ export default function Create() {
             <Head title="Crear Campeonato" />
 
             <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="mb-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="mb-8 px-4 sm:px-0">
                         <Link
                             href={route('admin.championships.index')}
                             className="text-sm text-parley-brown/50 hover:text-parley-red transition-colors mb-2 inline-block"
                         >
                             &larr; Volver a Campeonatos
                         </Link>
-                        <h1 className="text-3xl font-bold text-parley-brown">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-parley-brown">
                             Crear Campeonato
                         </h1>
                     </div>
@@ -170,11 +170,13 @@ export default function Create() {
                             </div>
                         </div>
 
-                        <div className="flex justify-end space-x-3">
-                            <Link href={route('admin.championships.index')}>
-                                <SecondaryButton>Cancelar</SecondaryButton>
+                        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-4 sm:px-0 pb-12 sm:pb-0">
+                            <Link href={route('admin.championships.index')} className="w-full sm:w-auto text-center">
+                                <SecondaryButton className="w-full sm:w-auto justify-center py-3 sm:py-2">
+                                    Cancelar
+                                </SecondaryButton>
                             </Link>
-                            <PrimaryButton disabled={processing}>
+                            <PrimaryButton disabled={processing} className="w-full sm:w-auto justify-center py-3 sm:py-2 text-sm">
                                 Crear Campeonato
                             </PrimaryButton>
                         </div>

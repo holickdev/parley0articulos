@@ -28,7 +28,7 @@ class ChampionshipController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'coleadores_count' => 'required|integer|min:1',
-            'rounds_count' => 'required|integer|min:1|max:10',
+            'rounds_count' => 'required|integer|min:1',
             'entry_price' => 'required|numeric|min:0',
             'status' => 'required|in:open,in_progress,finished',
             'coleadores' => 'required|array|min:1',
@@ -70,7 +70,7 @@ class ChampionshipController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'coleadores_count' => 'required|integer|min:1',
-            'rounds_count' => 'required|integer|min:1|max:10',
+            'rounds_count' => 'required|integer|min:1',
             'entry_price' => 'required|numeric|min:0',
             'status' => 'required|in:open,in_progress,finished',
             'coleadores' => 'required|array|min:1',

@@ -2,20 +2,41 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import Toast from '@/Components/Toast';
 import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { PropsWithChildren, ReactNode, useState, useEffect } from 'react';
 
 export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const user = usePage().props.auth.user;
+    const { auth, flash } = usePage().props as any;
+    const user = auth.user;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
 
+    const [toast, setToast] = useState<{ message: string | null; type: 'success' | 'error' }>({
+        message: null,
+        type: 'success',
+    });
+
+    useEffect(() => {
+        if (flash.success) {
+            setToast({ message: flash.success, type: 'success' });
+        } else if (flash.error) {
+            setToast({ message: flash.error, type: 'error' });
+        }
+    }, [flash]);
+
     return (
         <div className="min-h-screen bg-parley-cream">
+            <Toast 
+                message={toast.message} 
+                type={toast.type} 
+                onClose={() => setToast({ ...toast, message: null })} 
+            />
+            
             <nav className="bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-20 justify-between">

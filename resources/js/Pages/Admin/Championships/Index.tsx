@@ -28,13 +28,13 @@ export default function Index({ championships }: { championships: Championship[]
             <Head title="Campeonatos" />
 
             <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center mb-8">
-                        <h1 className="text-3xl font-bold text-parley-brown">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-parley-brown">
                             Campeonatos
                         </h1>
-                        <Link href={route('admin.championships.create')}>
-                            <PrimaryButton>
+                        <Link href={route('admin.championships.create')} className="w-full sm:w-auto">
+                            <PrimaryButton className="w-full sm:w-auto justify-center py-3 sm:py-2 text-sm">
                                 Registrar Campeonato <span className="ml-2 text-lg">+</span>
                             </PrimaryButton>
                         </Link>

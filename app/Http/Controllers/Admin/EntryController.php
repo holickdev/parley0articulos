@@ -56,14 +56,24 @@ class EntryController extends Controller
             ]);
         }
 
-        // 2. Control de concurrencia atómico basado en sesión
         $lockKey = "lock_entry_{$championship->id}_{$hash}";
         $sessionId = session()->getId();
+        $sessionMemoryKey = "locked_hash_{$championship->id}"; // Llave para recordar qué bloqueó este usuario
 
+        // NUEVO: Liberación proactiva de cuadros abandonados
+        $previousHash = session()->get($sessionMemoryKey);
+        if ($previousHash && $previousHash !== $hash) {
+            $oldLockKey = "lock_entry_{$championship->id}_{$previousHash}";
+            // Verificamos que el bloqueo viejo aún le pertenezca antes de borrarlo
+            if (Cache::get($oldLockKey) === $sessionId) {
+                Cache::forget($oldLockKey);
+            }
+        }
+
+        // 2. Control de concurrencia atómico
         $lockAcquired = Cache::add($lockKey, $sessionId, now()->addMinutes(10));
 
         if (!$lockAcquired) {
-            // Si la llave existe, verificamos si le pertenece al mismo usuario que hizo la petición
             $existingLockOwner = Cache::get($lockKey);
 
             if ($existingLockOwner !== $sessionId) {
@@ -72,9 +82,12 @@ class EntryController extends Controller
                 ]);
             }
 
-            // Si es el mismo usuario (retrocedió en el formulario), le renovamos el tiempo
+            // Es el mismo usuario renovando su propio tiempo
             Cache::put($lockKey, $sessionId, now()->addMinutes(10));
         }
+
+        // Si tuvo éxito, anotamos en su sesión personal cuál es el hash que tiene bloqueado
+        session()->put($sessionMemoryKey, $hash);
 
         return response()->json(['message' => 'Combinación disponible', 'hash' => $hash]);
     }
@@ -205,21 +218,59 @@ class EntryController extends Controller
             'coleadores.*' => 'exists:coleadores,id'
         ]);
 
-        DB::transaction(function () use ($validated, $entry) {
-            sort($validated['coleadores']);
-            $validated['combination_hash'] = implode('-', $validated['coleadores']);
+        sort($validated['coleadores']);
+        $hash = implode('-', $validated['coleadores']);
+        $lockKey = "lock_entry_{$championship->id}_{$hash}";
 
-            $entry->update([
-                'name' => $validated['name'],
-                'status' => $validated['status'],
-                'combination_hash' => $validated['combination_hash']
-            ]);
+        // Verificación de respeto de bloqueo si la combinación cambió
+        if ($hash !== $entry->combination_hash) {
+            $lockOwner = Cache::get($lockKey);
+            if ($lockOwner && $lockOwner !== session()->getId()) {
+                throw ValidationException::withMessages([
+                    'coleadores' => 'Esta combinación se encuentra actualmente reservada por otro usuario. Intente más tarde.'
+                ]);
+            }
+        }
 
-            $entry->coleadores()->sync($validated['coleadores']);
-        });
+        try {
+            return DB::transaction(function () use ($validated, $championship, $entry, $hash, $lockKey) {
+                // Verificación de existencia contra otros registros dentro de la transacción
+                $exists = Entry::where('championship_id', $championship->id)
+                    ->where('combination_hash', $hash)
+                    ->where('id', '!=', $entry->id)
+                    ->lockForUpdate()
+                    ->exists();
 
-        return redirect()->route('admin.championships.entries.index', $championship->id)
-            ->with('success', 'Cuadro actualizado con éxito.');
+                if ($exists) {
+                    throw ValidationException::withMessages([
+                        'coleadores' => 'Esta combinación de coleadores ya ha sido registrada en este campeonato.'
+                    ]);
+                }
+
+                $entry->update([
+                    'name' => $validated['name'],
+                    'status' => $validated['status'],
+                    'combination_hash' => $hash
+                ]);
+
+                $entry->coleadores()->sync($validated['coleadores']);
+
+                // Liberar el bloqueo si le pertenece a esta sesión
+                if (Cache::get($lockKey) === session()->getId()) {
+                    Cache::forget($lockKey);
+                }
+
+                return redirect()->route('admin.championships.entries.index', $championship->id)
+                    ->with('success', 'Cuadro actualizado con éxito.');
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == 23000) { // Unique constraint violation
+                throw ValidationException::withMessages([
+                    'coleadores' => 'Lo sentimos, esta combinación de coleadores ya ha sido registrada.'
+                ]);
+            }
+            throw $e;
+        }
     }
 
     public function destroy(Championship $championship, Entry $entry)
