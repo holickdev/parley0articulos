@@ -71,41 +71,39 @@ export default function Index({ rounds, championships }: { rounds: Round[], cham
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Rondas
-                    </h2>
-                    <PrimaryButton onClick={openCreateModal}>
-                        Agregar Ronda
-                    </PrimaryButton>
-                </div>
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Rondas" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center mb-8">
+                        <h1 className="text-3xl font-bold text-parley-brown">
+                            Rondas
+                        </h1>
+                        <PrimaryButton onClick={openCreateModal}>
+                            Agregar Ronda <span className="ml-2 text-lg">+</span>
+                        </PrimaryButton>
+                    </div>
+
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
+                        <div className="p-6 text-parley-brown">
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-parley-cream">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ID</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Número</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Campeonato</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Acciones</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-parley-brown/60">ID</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-parley-brown/60">Número</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-parley-brown/60">Campeonato</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-parley-brown/60">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
                                     {rounds.map((round) => (
                                         <tr key={round.id}>
-                                            <td className="px-6 py-4 text-sm text-gray-500">{round.id}</td>
-                                            <td className="px-6 py-4 text-sm font-bold text-gray-900">Ronda #{round.number}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">{round.championship.name}</td>
+                                            <td className="px-6 py-4 text-sm text-parley-brown/60">{round.id}</td>
+                                            <td className="px-6 py-4 text-sm font-bold text-parley-brown">Ronda #{round.number}</td>
+                                            <td className="px-6 py-4 text-sm text-parley-brown/80">{round.championship.name}</td>
                                             <td className="px-6 py-4 text-right text-sm font-medium">
-                                                <button onClick={() => openEditModal(round)} className="mr-3 text-indigo-600 hover:text-indigo-900">Editar</button>
+                                                <button onClick={() => openEditModal(round)} className="mr-3 text-parley-red hover:text-parley-brown">Editar</button>
                                                 <button onClick={() => handleDelete(round.id)} className="text-red-600 hover:text-red-900">Eliminar</button>
                                             </td>
                                         </tr>
@@ -119,7 +117,7 @@ export default function Index({ rounds, championships }: { rounds: Round[], cham
 
             <Modal show={isModalOpen} onClose={closeModal}>
                 <form onSubmit={submit} className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900">
+                    <h2 className="text-lg font-medium text-parley-brown">
                         {editingRound ? 'Editar Ronda' : 'Agregar Nueva Ronda'}
                     </h2>
 
@@ -129,7 +127,7 @@ export default function Index({ rounds, championships }: { rounds: Round[], cham
                             id="championship_id"
                             value={data.championship_id}
                             onChange={(e) => setData('championship_id', e.target.value)}
-                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                            className="mt-1 block w-full border-parley-gold/50 focus:border-parley-red focus:ring-parley-red rounded-md shadow-sm"
                         >
                             <option value="">Seleccione un campeonato</option>
                             {championships.map((c) => (

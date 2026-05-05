@@ -57,20 +57,26 @@ export default function Edit({ championship }: { championship: Championship }) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Editar Campeonato: {championship.name}
-                </h2>
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Editar Campeonato" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <div className="mb-8">
+                        <Link
+                            href={route('admin.championships.index')}
+                            className="text-sm text-parley-brown/50 hover:text-parley-red transition-colors mb-2 inline-block"
+                        >
+                            &larr; Volver a Campeonatos
+                        </Link>
+                        <h1 className="text-3xl font-bold text-parley-brown">
+                            Editar Campeonato: {championship.name}
+                        </h1>
+                    </div>
+
                     <form onSubmit={submit} className="space-y-6">
                         <div className="bg-white p-6 shadow sm:rounded-lg">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4">Información General</h3>
+                            <h3 className="text-lg font-medium text-parley-brown mb-4">Información General</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <InputLabel htmlFor="name" value="Nombre del Evento" />
@@ -89,7 +95,7 @@ export default function Edit({ championship }: { championship: Championship }) {
                                         id="status"
                                         value={data.status}
                                         onChange={(e) => setData('status', e.target.value as any)}
-                                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                        className="mt-1 block w-full border-parley-gold/50 focus:border-parley-red focus:ring-parley-red rounded-md shadow-sm"
                                     >
                                         <option value="open">Abierto (Registro de cuadros)</option>
                                         <option value="in_progress">En Curso (Competencia)</option>
@@ -138,8 +144,8 @@ export default function Edit({ championship }: { championship: Championship }) {
                         </div>
 
                         <div className="bg-white p-6 shadow sm:rounded-lg">
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">Coleadores Participantes</h3>
-                            <p className="text-sm text-gray-500 mb-4">Ingresa los nombres de los coleadores, uno por línea.</p>
+                            <h3 className="text-lg font-medium text-parley-brown mb-2">Coleadores Participantes</h3>
+                            <p className="text-sm text-parley-brown/60 mb-4">Ingresa los nombres de los coleadores, uno por línea.</p>
                             
                             <div className="space-y-4">
                                 <div className="flex gap-2">
@@ -163,11 +169,11 @@ export default function Edit({ championship }: { championship: Championship }) {
                                         id="coleadores_raw"
                                         value={rawNames}
                                         onChange={(e) => setRawNames(e.target.value)}
-                                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                        className="mt-1 block w-full border-parley-gold/50 focus:border-parley-red focus:ring-parley-red rounded-md shadow-sm"
                                         rows={10}
                                         placeholder="Coleador 1&#10;Coleador 2&#10;Coleador 3..."
                                     ></textarea>
-                                    <p className="mt-1 text-xs text-gray-600">
+                                    <p className="mt-1 text-xs text-parley-brown/80">
                                         {data.coleadores.length} coleadores detectados.
                                     </p>
                                     <InputError message={errors.coleadores} className="mt-2" />

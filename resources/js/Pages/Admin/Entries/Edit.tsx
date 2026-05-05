@@ -54,25 +54,23 @@ export default function Edit({ championship, entry, coleadores }: Props) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <div>
-                    <Link 
-                        href={route('admin.championships.entries.index', championship.id)}
-                        className="text-sm text-indigo-600 hover:text-indigo-900 mb-2 block"
-                    >
-                        &larr; Volver a Cuadros
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Editar Cuadro: {entry.name}
-                    </h2>
-                </div>
-            }
-        >
+        <AuthenticatedLayout>
             <Head title={`Editar Cuadro - ${entry.name}`} />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <div className="mb-8">
+                        <Link 
+                            href={route('admin.championships.entries.index', championship.id)}
+                            className="text-sm text-parley-brown/50 hover:text-parley-red transition-colors mb-2 inline-block"
+                        >
+                            &larr; Volver a Cuadros
+                        </Link>
+                        <h1 className="text-3xl font-bold text-parley-brown">
+                            Editar Cuadro: {entry.name}
+                        </h1>
+                    </div>
+
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <form onSubmit={submit} className="p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -97,7 +95,7 @@ export default function Edit({ championship, entry, coleadores }: Props) {
                                             id="status"
                                             value={data.status}
                                             onChange={(e) => setData('status', e.target.value as any)}
-                                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                            className="mt-1 block w-full border-parley-gold/50 focus:border-parley-red focus:ring-parley-red rounded-md shadow-sm"
                                         >
                                             <option value="pending">Pendiente</option>
                                             <option value="approved">Aprobado</option>
@@ -106,10 +104,10 @@ export default function Edit({ championship, entry, coleadores }: Props) {
                                         <InputError message={errors.status} className="mt-2" />
                                     </div>
                                     
-                                    <div className="bg-gray-50 p-4 rounded-md">
-                                        <h4 className="text-sm font-bold text-gray-700 mb-2">Información del Campeonato</h4>
-                                        <p className="text-sm text-gray-600">Nombre: {championship.name}</p>
-                                        <p className="text-sm text-gray-600">Coleadores por cuadro: {championship.coleadores_count}</p>
+                                    <div className="bg-parley-cream p-4 rounded-md">
+                                        <h4 className="text-sm font-bold text-parley-brown mb-2">Información del Campeonato</h4>
+                                        <p className="text-sm text-parley-brown/80">Nombre: {championship.name}</p>
+                                        <p className="text-sm text-parley-brown/80">Coleadores por cuadro: {championship.coleadores_count}</p>
                                     </div>
                                 </div>
 
@@ -117,7 +115,7 @@ export default function Edit({ championship, entry, coleadores }: Props) {
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
                                         <InputLabel value="Seleccionar Coleadores" />
-                                        <span className="text-sm font-medium text-gray-600">
+                                        <span className="text-sm font-medium text-parley-brown/80">
                                             Seleccionados: {data.coleadores.length} / {championship.coleadores_count}
                                         </span>
                                     </div>
@@ -127,20 +125,19 @@ export default function Edit({ championship, entry, coleadores }: Props) {
                                             const isDisabled = !isSelected && data.coleadores.length >= championship.coleadores_count;
                                             
                                             return (
-                                                <label 
-                                                    key={coleador.id} 
+                                                <label
+                                                    key={coleador.id}
                                                     className={`flex items-center p-2 rounded border cursor-pointer transition ${
-                                                        isSelected ? 'bg-indigo-50 border-indigo-200' : 'hover:bg-gray-50'
+                                                        isSelected ? 'bg-parley-cream border-parley-gold/40' : 'hover:bg-parley-cream'
                                                     } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                >
-                                                    <input
+                                                >                                                    <input
                                                         type="checkbox"
                                                         checked={isSelected}
                                                         onChange={() => handleColeadorToggle(coleador.id)}
                                                         disabled={isDisabled}
-                                                        className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                                        className="rounded border-parley-gold/50 text-parley-red shadow-sm focus:ring-parley-red"
                                                     />
-                                                    <span className="ml-2 text-sm text-gray-700">{coleador.name}</span>
+                                                    <span className="ml-2 text-sm text-parley-brown">{coleador.name}</span>
                                                 </label>
                                             );
                                         })}

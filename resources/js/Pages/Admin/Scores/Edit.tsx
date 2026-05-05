@@ -57,7 +57,7 @@ export default function Edit({ score, championship, rounds, coleadores }: Props)
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl font-semibold leading-tight text-parley-brown">
                     Editar Puntuación: {championship.name}
                 </h2>
             }
@@ -75,7 +75,7 @@ export default function Edit({ score, championship, rounds, coleadores }: Props)
                                         id="round_id"
                                         value={data.round_id}
                                         onChange={(e) => setData('round_id', e.target.value)}
-                                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                        className="mt-1 block w-full border-parley-gold/50 focus:border-parley-red focus:ring-parley-red rounded-md shadow-sm"
                                         required
                                     >
                                         {rounds.map((r) => (
@@ -93,7 +93,7 @@ export default function Edit({ score, championship, rounds, coleadores }: Props)
                                         id="coleador_id"
                                         value={data.coleador_id}
                                         onChange={(e) => setData('coleador_id', e.target.value)}
-                                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                        className="mt-1 block w-full border-parley-gold/50 focus:border-parley-red focus:ring-parley-red rounded-md shadow-sm"
                                         required
                                     >
                                         {coleadores.map((c) => (

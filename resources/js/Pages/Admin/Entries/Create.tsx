@@ -92,34 +92,32 @@ export default function Create({ championship }: Props) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <div>
-                    <Link 
-                        href={route('admin.championships.entries.index', championship.id)}
-                        className="text-sm text-indigo-600 hover:text-indigo-900 mb-2 block"
-                    >
-                        &larr; Volver a Cuadros
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Registro de Cuadro: {championship.name}
-                    </h2>
-                </div>
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Registrar Cuadro" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
+                    <div className="mb-8">
+                        <Link 
+                            href={route('admin.championships.entries.index', championship.id)}
+                            className="text-sm text-parley-brown/50 hover:text-parley-red transition-colors mb-2 inline-block"
+                        >
+                            &larr; Volver a Cuadros
+                        </Link>
+                        <h1 className="text-3xl font-bold text-parley-brown">
+                            Registro de Cuadro: {championship.name}
+                        </h1>
+                    </div>
+
                     {/* Stepper Header */}
                     <div className="mb-8">
                         <div className="flex items-center justify-between relative">
-                            <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-200 -z-10"></div>
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= 1 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>1</div>
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= 2 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>2</div>
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= 3 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>3</div>
+                            <div className="absolute left-0 top-1/2 w-full h-0.5 bg-parley-cream/50 -z-10"></div>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= 1 ? 'bg-parley-red text-white' : 'bg-parley-cream/50 text-parley-brown/80'}`}>1</div>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= 2 ? 'bg-parley-red text-white' : 'bg-parley-cream/50 text-parley-brown/80'}`}>2</div>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= 3 ? 'bg-parley-red text-white' : 'bg-parley-cream/50 text-parley-brown/80'}`}>3</div>
                         </div>
-                        <div className="flex justify-between mt-2 text-xs font-medium text-gray-500">
+                        <div className="flex justify-between mt-2 text-xs font-medium text-parley-brown/60">
                             <span>DATOS DEL CLIENTE</span>
                             <span className="ml-4">DATOS DEL CUADRO</span>
                             <span>DATOS DEL PAGO</span>
@@ -131,7 +129,7 @@ export default function Create({ championship }: Props) {
                             {/* Step 1: Customer */}
                             {step === 1 && (
                                 <div className="space-y-6">
-                                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Información del Cliente</h3>
+                                    <h3 className="text-lg font-medium text-parley-brown border-b pb-2">Información del Cliente</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <InputLabel htmlFor="customer_identification" value="Cédula / Identificación" />
@@ -181,7 +179,7 @@ export default function Create({ championship }: Props) {
                             {/* Step 2: Entry */}
                             {step === 2 && (
                                 <div className="space-y-6">
-                                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Configuración del Cuadro</h3>
+                                    <h3 className="text-lg font-medium text-parley-brown border-b pb-2">Configuración del Cuadro</h3>
                                     <div>
                                         <InputLabel htmlFor="entry_name" value="Nombre del Cuadro" />
                                         <TextInput
@@ -199,7 +197,7 @@ export default function Create({ championship }: Props) {
                                     <div>
                                         <div className="flex justify-between items-center mb-2">
                                             <InputLabel value="Seleccionar Coleadores" />
-                                            <span className="text-sm font-medium text-gray-600">
+                                            <span className="text-sm font-medium text-parley-brown/80">
                                                 Seleccionados: {data.coleadores.length} / {championship.coleadores_count}
                                             </span>
                                         </div>
@@ -209,20 +207,19 @@ export default function Create({ championship }: Props) {
                                                 const isDisabled = !isSelected && data.coleadores.length >= championship.coleadores_count;
                                                 
                                                 return (
-                                                    <label 
-                                                        key={coleador.id} 
+                                                    <label
+                                                        key={coleador.id}
                                                         className={`flex items-center p-3 rounded-lg border cursor-pointer transition ${
-                                                            isSelected ? 'bg-indigo-50 border-indigo-400 ring-1 ring-indigo-400' : 'hover:bg-gray-50 border-gray-200'
+                                                            isSelected ? 'bg-parley-cream border-parley-red ring-1 ring-parley-red' : 'hover:bg-parley-cream border-parley-gold/30'
                                                         } ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                                                     >
-                                                        <input
-                                                            type="checkbox"
+                                                        <input                                                            type="checkbox"
                                                             checked={isSelected}
                                                             onChange={() => handleColeadorToggle(coleador.id)}
                                                             disabled={isDisabled}
-                                                            className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                                            className="rounded border-parley-gold/50 text-parley-red shadow-sm focus:ring-parley-red"
                                                         />
-                                                        <span className="ml-2 text-sm font-medium text-gray-700 truncate">{coleador.name}</span>
+                                                        <span className="ml-2 text-sm font-medium text-parley-brown truncate">{coleador.name}</span>
                                                     </label>
                                                 );
                                             })}
@@ -248,7 +245,7 @@ export default function Create({ championship }: Props) {
                             {/* Step 3: Payment */}
                             {step === 3 && (
                                 <div className="space-y-6">
-                                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Información del Pago</h3>
+                                    <h3 className="text-lg font-medium text-parley-brown border-b pb-2">Información del Pago</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <InputLabel htmlFor="payment_bank" value="Banco" />

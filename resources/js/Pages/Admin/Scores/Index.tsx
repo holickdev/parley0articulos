@@ -190,9 +190,9 @@ export default function Index({
     const colWidth = 40;
 
     const PaginationControls = () => (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50 p-4 border-x border-b border-gray-300">
-            <div className="text-sm text-gray-600 font-medium">
-                Mostrando <span className="text-gray-900 font-bold">{paginatedColeadores.length}</span> de <span className="text-gray-900 font-bold">{processedColeadores.length}</span> coleadores
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-parley-cream p-4 border-x border-b border-parley-gold/50">
+            <div className="text-sm text-parley-brown/80 font-medium">
+                Mostrando <span className="text-parley-brown font-bold">{paginatedColeadores.length}</span> de <span className="text-parley-brown font-bold">{processedColeadores.length}</span> coleadores
             </div>
             {totalPages > 1 && (
                 <div className="flex items-center gap-2">
@@ -200,7 +200,7 @@ export default function Index({
                         type="button"
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
                         disabled={currentPage === 1} 
-                        className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-gray-100 transition-colors"
+                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
                     >
                         Anterior
                     </button>
@@ -208,7 +208,7 @@ export default function Index({
                         {[...Array(totalPages)].map((_, i) => {
                             const p = i + 1;
                             if (totalPages > 7 && Math.abs(p - currentPage) > 2 && p !== 1 && p !== totalPages) {
-                                if (Math.abs(p - currentPage) === 3) return <span key={p} className="px-1 text-gray-400">...</span>;
+                                if (Math.abs(p - currentPage) === 3) return <span key={p} className="px-1 text-parley-brown/40">...</span>;
                                 return null;
                             }
                             return (
@@ -218,8 +218,8 @@ export default function Index({
                                     onClick={() => setCurrentPage(p)}
                                     className={`w-8 h-8 rounded-md text-sm font-bold transition-colors ${
                                         currentPage === p 
-                                            ? 'bg-indigo-600 text-white shadow-sm' 
-                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            ? 'bg-parley-red text-white shadow-sm' 
+                                            : 'bg-white border border-parley-gold/50 text-parley-brown hover:bg-parley-cream'
                                     }`}
                                 >
                                     {p}
@@ -231,7 +231,7 @@ export default function Index({
                         type="button"
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
                         disabled={currentPage === totalPages} 
-                        className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-gray-100 transition-colors"
+                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
                     >
                         Siguiente
                     </button>
@@ -253,60 +253,63 @@ export default function Index({
         : '';
 
     return (
-        <AuthenticatedLayout
-            header={
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Puntuaciones: {championship.name}
-                    </h2>
-                    <div className="flex gap-2">
-                        <Link href={route('admin.championships.index')}>
-                            <PrimaryButton className="bg-gray-600 hover:bg-gray-700">Volver</PrimaryButton>
-                        </Link>
+        <AuthenticatedLayout>
+            <Head title={`Puntuaciones - ${championship.name}`} />
+
+            <div className="py-6">
+                <div className="mx-auto max-w-[99%] sm:px-4 lg:px-6">
+                    <div className="mb-8 flex justify-between items-end">
+                        <div>
+                            <Link 
+                                href={route('admin.championships.index')}
+                                className="text-sm text-parley-brown/50 hover:text-parley-red transition-colors mb-2 inline-block"
+                            >
+                                &larr; Volver a Campeonatos
+                            </Link>
+                            <h1 className="text-3xl font-bold text-parley-brown">
+                                Puntuaciones: {championship.name}
+                            </h1>
+                        </div>
                         <PrimaryButton onClick={submit} disabled={processing} className="bg-green-600 hover:bg-green-700">
                             {processing ? 'Guardando...' : 'Guardar Todo'}
                         </PrimaryButton>
                     </div>
-                </div>
-            }
-        >
-            <Head title={`Puntuaciones - ${championship.name}`} />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-[99%] sm:px-4 lg:px-6 space-y-4">
-                    {recentlySuccessful && (
+                    <div className="space-y-4">
+                        {recentlySuccessful && (
                         <div className="p-4 text-sm text-green-800 rounded-lg bg-green-50 font-bold border border-green-200 shadow-sm">
                             ✓ Cambios guardados correctamente en la base de datos.
                         </div>
                     )}
+                    </div>
 
                     {/* Toolbar de Data Table */}
-                    <div className="bg-white p-4 rounded-t-lg border-x border-t border-gray-300 shadow-sm flex flex-col lg:flex-row gap-4 justify-between items-center">
+                    <div className="bg-white p-4 rounded-t-lg border-x border-t border-parley-gold/50 shadow-sm flex flex-col lg:flex-row gap-4 justify-between items-center">
                         <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-700">Ver</span>
+                                <span className="text-sm font-medium text-parley-brown">Ver</span>
                                 <select 
                                     value={itemsPerPage} 
                                     onChange={(e) => {
                                         setItemsPerPage(Number(e.target.value));
                                         setCurrentPage(1);
                                     }}
-                                    className="border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-md text-sm py-1 pr-8"
+                                    className="border-parley-gold/50 focus:ring-parley-red focus:border-parley-red rounded-md text-sm py-1 pr-8"
                                 >
                                     <option value={10}>10</option>
                                     <option value={25}>25</option>
                                     <option value={50}>50</option>
                                     <option value={100}>100</option>
                                 </select>
-                                <span className="text-sm font-medium text-gray-700">filas</span>
+                                <span className="text-sm font-medium text-parley-brown">filas</span>
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-700">Ordenar por</span>
+                                <span className="text-sm font-medium text-parley-brown">Ordenar por</span>
                                 <select 
                                     value={sortBy} 
                                     onChange={(e) => setSortBy(e.target.value)}
-                                    className="border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-md text-sm py-1 pr-8"
+                                    className="border-parley-gold/50 focus:ring-parley-red focus:border-parley-red rounded-md text-sm py-1 pr-8"
                                 >
                                     <option value="name">Nombre</option>
                                     <option value="ce">Total CE</option>
@@ -317,7 +320,7 @@ export default function Index({
                                 <button 
                                     type="button"
                                     onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                    className="p-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                                    className="p-1.5 bg-parley-cream hover:bg-parley-cream/50 border border-parley-gold/50 rounded-md transition-colors"
                                     title={sortDirection === 'asc' ? 'Orden Ascendente' : 'Orden Descendente'}
                                 >
                                     {sortDirection === 'asc' ? (
@@ -337,9 +340,9 @@ export default function Index({
                                 <button 
                                     type="button"
                                     onClick={() => setIsRoundsMenuOpen(!isRoundsMenuOpen)}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-parley-gold/50 rounded-md text-sm font-medium text-parley-brown hover:bg-parley-cream transition-colors"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-parley-brown/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                     </svg>
                                     Rondas ({visibleRounds.length})
@@ -351,11 +354,11 @@ export default function Index({
                                 {isRoundsMenuOpen && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setIsRoundsMenuOpen(false)}></div>
-                                        <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-2">
-                                            <div className="mb-2 pb-2 border-b border-gray-100 flex justify-between px-2">
+                                        <div className="absolute left-0 mt-2 w-48 bg-white border border-parley-gold/30 rounded-md shadow-lg z-50 p-2">
+                                            <div className="mb-2 pb-2 border-b border-parley-gold/20 flex justify-between px-2">
                                                 <button 
                                                     type="button" 
-                                                    className="text-[10px] text-indigo-600 font-bold hover:underline"
+                                                    className="text-[10px] text-parley-red font-bold hover:underline"
                                                     onClick={() => setVisibleRounds(rounds.map(r => r.id))}
                                                 >Todas</button>
                                                 <button 
@@ -366,14 +369,14 @@ export default function Index({
                                             </div>
                                             <div className="max-h-60 overflow-y-auto">
                                                 {rounds.map(round => (
-                                                    <label key={round.id} className="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                                                    <label key={round.id} className="flex items-center px-2 py-1.5 hover:bg-parley-cream rounded cursor-pointer">
                                                         <input 
                                                             type="checkbox" 
                                                             checked={visibleRounds.includes(round.id)}
                                                             onChange={() => toggleRound(round.id)}
-                                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                                                            className="rounded border-parley-gold/50 text-parley-red focus:ring-parley-red h-4 w-4"
                                                         />
-                                                        <span className="ml-2 text-sm text-gray-700">Ronda {round.number}</span>
+                                                        <span className="ml-2 text-sm text-parley-brown">Ronda {round.number}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -386,7 +389,7 @@ export default function Index({
                         <div className="w-full lg:max-w-md">
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="h-4 w-4 text-parley-brown/40" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                     </svg>
                                 </div>
@@ -403,37 +406,37 @@ export default function Index({
                         </div>
                     </div>
 
-                    <div className="overflow-hidden bg-white shadow-sm border border-gray-300">
+                    <div className="overflow-hidden bg-white shadow-sm border border-parley-gold/50">
                         <PaginationControls />
                         <div className="overflow-x-auto">
                             <table className="min-w-full border-separate" style={{ borderSpacing: 0 }}>
                                 <thead>
-                                    <tr className="bg-gray-200">
-                                        <th className="border-b border-r border-gray-400 p-2 text-left sticky left-0 bg-gray-200 z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
+                                    <tr className="bg-parley-cream/50">
+                                        <th className="border-b border-r border-parley-gold/70 p-2 text-left sticky left-0 bg-parley-cream/50 z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
                                         {filteredRounds.map(round => (
-                                            <th key={round.id} className="border-b border-r border-gray-400 p-2 text-center bg-indigo-100 min-w-[160px]" colSpan={4}>Ronda {round.number}</th>
+                                            <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-parley-gold/20 min-w-[160px]" colSpan={4}>Ronda {round.number}</th>
                                         ))}
-                                        <th className="border-b border-l border-gray-800 p-2 text-center bg-gray-800 text-white sticky right-0 z-30" colSpan={4} style={{ minWidth: colWidth * 4 }}>TOTALES</th>
+                                        <th className="border-b border-l border-parley-brown p-2 text-center bg-parley-brown text-white sticky right-0 z-30" colSpan={4} style={{ minWidth: colWidth * 4 }}>TOTALES</th>
                                     </tr>
-                                    <tr className="bg-gray-100 text-[10px] uppercase font-bold text-gray-700">
+                                    <tr className="bg-parley-cream text-[10px] uppercase font-bold text-parley-brown">
                                         {filteredRounds.map(round => (
                                             <Fragment key={`sub-header-${round.id}`}>
-                                                <th className="border-b border-r border-gray-300 p-1 text-center bg-green-100 w-10">CE</th>
-                                                <th className="border-b border-r border-gray-300 p-1 text-center bg-red-100 w-10">CN</th>
-                                                <th className="border-b border-r border-gray-300 p-1 text-center bg-blue-100 w-10">TP</th>
-                                                <th className="border-b border-r border-gray-300 p-1 text-center bg-yellow-100 w-10">AR</th>
+                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-green-100 w-10">CE</th>
+                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-red-100 w-10">CN</th>
+                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-blue-100 w-10">TP</th>
+                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-yellow-100 w-10">AR</th>
                                             </Fragment>
                                         ))}
-                                        <th className="border-b border-l border-gray-400 p-1 text-center bg-green-200 text-green-900 sticky z-30" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
-                                        <th className="border-b border-l border-gray-400 p-1 text-center bg-red-200 text-red-900 sticky z-30" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
-                                        <th className="border-b border-l border-gray-400 p-1 text-center bg-blue-200 text-blue-900 sticky z-30" style={{ right: colWidth * 1, width: colWidth }}>TP</th>
-                                        <th className="border-b border-l border-gray-400 p-1 text-center bg-yellow-200 text-yellow-900 sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
+                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-green-200 text-green-900 sticky z-30" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
+                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-red-200 text-red-900 sticky z-30" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
+                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-blue-200 text-blue-900 sticky z-30" style={{ right: colWidth * 1, width: colWidth }}>TP</th>
+                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-yellow-200 text-yellow-900 sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {paginatedColeadores.map((coleador, index) => {
                                         let currentCE = 0, currentCN = 0, currentTP = 0, currentAR = 0;
-                                        const rowBgColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-200';
+                                        const rowBgColor = index % 2 === 0 ? 'bg-white' : 'bg-parley-cream/50';
                                         
                                         const ceBg = index % 2 === 0 ? 'bg-green-50' : 'bg-green-100';
                                         const cnBg = index % 2 === 0 ? 'bg-red-50' : 'bg-red-100';
@@ -441,8 +444,8 @@ export default function Index({
                                         const arBg = index % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100';
 
                                         return (
-                                            <tr key={coleador.id} className={`${rowBgColor} hover:bg-indigo-200 transition-colors group`}>
-                                                <td className={`border-b border-r border-gray-300 p-2 font-bold sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-indigo-200`}>
+                                            <tr key={coleador.id} className={`${rowBgColor} hover:bg-parley-gold/20 transition-colors group`}>
+                                                <td className={`border-b border-r border-parley-gold/50 p-2 font-bold sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-parley-gold/20`}>
                                                     {coleador.name}
                                                 </td>
                                                 {filteredRounds.map(round => {
@@ -454,20 +457,20 @@ export default function Index({
                                                     currentAR += arTotal;
                                                     return (
                                                         <Fragment key={`cell-${coleador.id}-${round.id}`}>
-                                                            <td className="border-b border-r border-gray-300 p-0 hover:bg-green-200 transition-colors">
-                                                                <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-indigo-500 bg-transparent" 
+                                                            <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-green-200 transition-colors">
+                                                                <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent" 
                                                                     value={s.effective_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'effective_coleadas', e.target.value)} />
                                                         </td>
-                                                        <td className="border-b border-r border-gray-300 p-0 hover:bg-red-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-indigo-500 bg-transparent" 
+                                                        <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-red-200 transition-colors">
+                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent" 
                                                                 value={s.null_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'null_coleadas', e.target.value)} />
                                                         </td>
-                                                        <td className="border-b border-r border-gray-300 p-0 hover:bg-blue-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-indigo-500 bg-transparent" 
+                                                        <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-blue-200 transition-colors">
+                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent" 
                                                                 value={s.gate_bulls} onChange={(e) => handleInputChange(round.id, coleador.id, 'gate_bulls', e.target.value)} />
                                                         </td>
                                                         <td 
-                                                            className={`border-b border-r border-gray-300 p-2 text-center text-sm cursor-pointer hover:bg-yellow-200 transition-colors font-bold ${arTotal > 0 ? 'text-red-600' : 'text-gray-400'}`}
+                                                            className={`border-b border-r border-parley-gold/50 p-2 text-center text-sm cursor-pointer hover:bg-yellow-200 transition-colors font-bold ${arTotal > 0 ? 'text-red-600' : 'text-parley-brown/40'}`}
                                                             onClick={() => openArticlesModal(round.id, coleador.id)}
                                                         >
                                                             {arTotal > 0 ? `-${arTotal}` : '0'}
@@ -475,11 +478,11 @@ export default function Index({
                                                     </Fragment>
                                                 );
                                             })}
-                                            <td className={`border-b border-l border-gray-300 p-2 text-center font-bold text-green-900 text-sm sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
-                                            <td className={`border-b border-l border-gray-300 p-2 text-center font-bold text-red-900 text-sm sticky z-20 ${cnBg} hover:bg-red-200 transition-colors group-hover:bg-red-200`} style={{ right: colWidth * 2 }}>{currentCN}</td>
-                                            <td className={`border-b border-l border-gray-300 p-2 text-center font-bold text-blue-900 text-sm sticky z-20 ${tpBg} hover:bg-blue-200 transition-colors group-hover:bg-blue-200`} style={{ right: colWidth * 1 }}>{currentTP}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-green-900 text-sm sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-red-900 text-sm sticky z-20 ${cnBg} hover:bg-red-200 transition-colors group-hover:bg-red-200`} style={{ right: colWidth * 2 }}>{currentCN}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-blue-900 text-sm sticky z-20 ${tpBg} hover:bg-blue-200 transition-colors group-hover:bg-blue-200`} style={{ right: colWidth * 1 }}>{currentTP}</td>
                                             <td 
-                                                className={`border-b border-l border-gray-300 p-2 text-center font-bold text-red-700 text-sm sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`} 
+                                                className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-red-700 text-sm sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`} 
                                                 style={{ right: 0 }}
                                                 onClick={() => openSummaryModal(coleador.id)}
                                             >
@@ -499,21 +502,21 @@ export default function Index({
             <Modal show={isArticlesModalOpen} onClose={() => setIsArticlesModalOpen(false)} maxWidth="md">
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-lg font-bold text-gray-900">
+                        <h2 className="text-lg font-bold text-parley-brown">
                             Artículos / Restas - Ronda {activeRoundNumber}
                         </h2>
-                        <span className="text-indigo-600 font-bold">{activeColeadorName}</span>
+                        <span className="text-parley-red font-bold">{activeColeadorName}</span>
                     </div>
 
                     <div className="space-y-4">
                         {Object.entries(activeArticles).length === 0 && (
-                            <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 text-gray-500 italic">
+                            <div className="text-center py-4 bg-parley-cream rounded-lg border-2 border-dashed border-parley-gold/30 text-parley-brown/60 italic">
                                 No hay artículos registrados para esta ronda.
                             </div>
                         )}
                         
                         {Object.entries(activeArticles).map(([name, points], idx) => (
-                            <div key={`active-article-${idx}-${name}`} className="flex gap-4 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
+                            <div key={`active-article-${idx}-${name}`} className="flex gap-4 items-end bg-parley-cream p-3 rounded-lg border border-parley-gold/30">
                                 <div className="w-32 sm:w-48">
                                     <InputLabel value="Nombre" />
                                     <TextInput 
@@ -560,17 +563,16 @@ export default function Index({
                             </div>
                         ))}
 
-                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                        <div className="flex justify-between items-center pt-4 border-t border-parley-gold/20">
                             <button 
                                 type="button"
                                 onClick={() => {
                                     const newArticles = { ...activeArticles, "": 0 };
                                     if (activeArticleTarget) handleArticlesChange(activeArticleTarget.roundId, activeArticleTarget.coleadorId, newArticles);
                                 }}
-                                className="inline-flex items-center text-sm font-bold text-indigo-600 hover:text-indigo-800"
+                                className="inline-flex items-center text-sm font-bold text-parley-red hover:text-parley-brown"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                 </svg>
                                 AGREGAR ARTÍCULO
                             </button>
@@ -592,10 +594,10 @@ export default function Index({
             <Modal show={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} maxWidth="md">
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-lg font-bold text-gray-900">
+                        <h2 className="text-lg font-bold text-parley-brown">
                             Resumen de Artículos
                         </h2>
-                        <span className="text-indigo-600 font-bold">
+                        <span className="text-parley-red font-bold">
                             {coleadores.find(c => c.id === summaryColeadorId)?.name}
                         </span>
                     </div>
@@ -606,16 +608,15 @@ export default function Index({
                             if (Object.keys(roundArticles).length === 0) return null;
 
                             return (
-                                <div key={round.id} className="border-l-4 border-indigo-500 pl-4 py-1">
-                                    <h3 className="text-sm font-bold text-gray-600 mb-2 uppercase">Ronda {round.number}</h3>
-                                    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                                        {Object.entries(roundArticles).map(([name, points], idx) => (
+                                <div key={round.id} className="border-l-4 border-parley-red pl-4 py-1">
+                                    <h3 className="text-sm font-bold text-parley-brown/80 mb-2 uppercase">Ronda {round.number}</h3>
+                                    <div className="bg-parley-cream rounded-lg p-3 space-y-2">                                        {Object.entries(roundArticles).map(([name, points], idx) => (
                                             <div key={`summary-article-${round.id}-${idx}-${name}`} className="flex justify-between items-center text-sm">
-                                                <span className="text-gray-700 font-medium">{name || '(Sin nombre)'}</span>
+                                                <span className="text-parley-brown font-medium">{name || '(Sin nombre)'}</span>
                                                 <span className="text-red-600 font-bold">-{points}</span>
                                             </div>
                                         ))}
-                                        <div className="pt-2 border-t border-gray-200 flex justify-between items-center font-bold text-sm">
+                                        <div className="pt-2 border-t border-parley-gold/30 flex justify-between items-center font-bold text-sm">
                                             <span>Total Ronda</span>
                                             <span className="text-red-700">-{sumArticles(roundArticles)}</span>
                                         </div>
@@ -625,13 +626,13 @@ export default function Index({
                         })}
 
                         {summaryColeadorId && rounds.every(r => Object.keys(data.scores[r.id]?.[summaryColeadorId]?.articles || {}).length === 0) && (
-                            <div className="text-center py-8 text-gray-500 italic">
+                            <div className="text-center py-8 text-parley-brown/60 italic">
                                 No se encontraron artículos registrados para este coleador.
                             </div>
                         )}
                     </div>
 
-                    <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between items-center">
+                    <div className="mt-8 pt-4 border-t border-parley-gold/20 flex justify-between items-center">
                         <div className="text-lg font-bold">
                             Total Campeonato: <span className="text-red-600">
                                 -{summaryColeadorId ? rounds.reduce((acc, r) => acc + sumArticles(data.scores[r.id]?.[summaryColeadorId]?.articles || {}), 0) : 0}

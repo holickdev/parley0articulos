@@ -15,14 +15,14 @@ export default function Authenticated({
         useState(false);
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="border-b border-gray-100 bg-white">
+        <div className="min-h-screen bg-parley-cream">
+            <nav className="bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
+                    <div className="flex h-20 justify-between">
                         <div className="flex">
-                            <div className="flex shrink-0 items-center">
+                            <div className="flex shrink-0 items-center mr-6">
                                 <Link href="/dashboard">
-                                    <ApplicationLogo className="block h-16modifica w-auto fill-current text-gray-800" />
+                                    <ApplicationLogo className="block h-14 w-auto" />
                                 </Link>
                             </div>
 
@@ -57,12 +57,6 @@ export default function Authenticated({
                                 >
                                     Pagos
                                 </NavLink>
-                                <NavLink
-                                    href={route('admin.rounds.index')}
-                                    active={route().current('admin.rounds.*')}
-                                >
-                                    Rondas
-                                </NavLink>
                             </div>
                         </div>
 
@@ -73,12 +67,15 @@ export default function Authenticated({
                                         <span className="inline-flex rounded-md">
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
+                                                className="inline-flex items-center gap-3 rounded-md border border-parley-gold/10 bg-parley-cream/20 px-3 py-1.5 text-sm font-medium leading-4 text-parley-brown transition duration-150 ease-in-out hover:bg-parley-cream/50 hover:text-parley-red focus:outline-none"
                                             >
+                                                <div className="h-8 w-8 rounded-full bg-parley-red text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                                                    {user.name.charAt(0).toUpperCase()}
+                                                </div>
                                                 {user.name}
 
                                                 <svg
-                                                    className="-me-0.5 ms-2 h-4 w-4"
+                                                    className="-me-0.5 ms-1 h-4 w-4 opacity-50"
                                                     xmlns="http://www.w3.org/2000/svg"
                                                     viewBox="0 0 20 20"
                                                     fill="currentColor"
@@ -118,7 +115,7 @@ export default function Authenticated({
                                         (previousState) => !previousState,
                                     )
                                 }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
+                                className="inline-flex items-center justify-center rounded-md p-2 text-parley-gold transition duration-150 ease-in-out hover:bg-parley-cream hover:text-parley-red focus:bg-parley-cream focus:text-parley-red focus:outline-none"
                             >
                                 <svg
                                     className="h-6 w-6"
@@ -191,20 +188,14 @@ export default function Authenticated({
                         >
                             Pagos
                         </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('admin.rounds.index')}
-                            active={route().current('admin.rounds.*')}
-                        >
-                            Rondas
-                        </ResponsiveNavLink>
                     </div>
 
-                    <div className="border-t border-gray-200 pb-1 pt-4">
+                    <div className="border-t border-parley-gold/20 pb-1 pt-4">
                         <div className="px-4">
-                            <div className="text-base font-medium text-gray-800">
+                            <div className="text-base font-medium text-parley-brown">
                                 {user.name}
                             </div>
-                            <div className="text-sm font-medium text-gray-500">
+                            <div className="text-sm font-medium text-parley-brown/70">
                                 {user.email}
                             </div>
                         </div>
@@ -225,15 +216,7 @@ export default function Authenticated({
                 </div>
             </nav>
 
-            {header && (
-                <header className="bg-white shadow">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        {header}
-                    </div>
-                </header>
-            )}
-
-            <main>{children}</main>
+            <main className="py-10">{children}</main>
         </div>
     );
 }
