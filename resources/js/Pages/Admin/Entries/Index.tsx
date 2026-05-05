@@ -75,6 +75,17 @@ export default function Index({ championship, entries }: { championship: Champio
         }
     };
 
+    const formatDate = (dateString: string) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        return date.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -101,7 +112,7 @@ export default function Index({ championship, entries }: { championship: Champio
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900 overflow-x-auto">
+                        <div className="p-6 text-gray-900 overflow-x-auto pb-24">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
@@ -271,7 +282,7 @@ export default function Index({ championship, entries }: { championship: Champio
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase font-bold">Fecha</p>
-                                    <p className="text-gray-900 font-medium">{selectedEntry.payment.payment_date}</p>
+                                    <p className="text-gray-900 font-medium">{formatDate(selectedEntry.payment.payment_date)}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase font-bold">Teléfono Pago</p>

@@ -45,7 +45,7 @@ export default function Index({ payments }: { payments: Payment[] }) {
             phone: payment.phone,
             reference: payment.reference,
             amount_bs: payment.amount_bs,
-            payment_date: payment.payment_date,
+            payment_date: payment.payment_date.split('T')[0],
         });
         clearErrors();
         setEditingPayment(payment);
@@ -74,6 +74,17 @@ export default function Index({ payments }: { payments: Payment[] }) {
         if (confirm('¿Estás seguro de que deseas eliminar este pago?')) {
             destroy(route('admin.payments.destroy', id));
         }
+    };
+
+    const formatDate = (dateString: string) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        return date.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
     };
 
     return (
@@ -113,7 +124,7 @@ export default function Index({ payments }: { payments: Payment[] }) {
                                             <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600">{payment.identification}</td>
                                             <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600">{payment.bank}</td>
                                             <td className="whitespace-nowrap px-4 py-4 text-sm font-bold text-gray-900">{payment.amount_bs} Bs.</td>
-                                            <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-500">{payment.payment_date}</td>
+                                            <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-500">{formatDate(payment.payment_date)}</td>
                                             <td className="whitespace-nowrap px-4 py-4 text-right text-sm font-medium">
                                                 <button onClick={() => openEditModal(payment)} className="mr-3 text-indigo-600 hover:text-indigo-900">Editar</button>
                                                 <button onClick={() => handleDelete(payment.id)} className="text-red-600 hover:text-red-900">Eliminar</button>
