@@ -50,7 +50,7 @@ class ScoreController extends Controller
             'scores.*.*.effective_coleadas' => 'nullable|integer|min:0',
             'scores.*.*.null_coleadas' => 'nullable|integer|min:0',
             'scores.*.*.gate_bulls' => 'nullable|integer|min:0',
-            'scores.*.*.articles' => 'nullable|array',
+            'scores.*.*.articles' => 'nullable', // Removed strict array validation
         ]);
 
         DB::transaction(function () use ($validated) {
@@ -58,6 +58,11 @@ class ScoreController extends Controller
                 foreach ($coleadores as $coleadorId => $data) {
                     $articles = $data['articles'] ?? [];
                     
+                    // Asegurar que articles sea un array (puede venir como entero si se guardó mal anteriormente)
+                    if (!is_array($articles)) {
+                        $articles = !empty($articles) ? [$articles] : [];
+                    }
+
                     // Asegurar que todos los valores de artículos sean positivos
                     if (!empty($articles)) {
                         $articles = array_map(fn($val) => max(0, (int)$val), $articles);
