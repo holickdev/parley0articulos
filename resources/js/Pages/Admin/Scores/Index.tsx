@@ -460,11 +460,11 @@ export default function Index({
                             <table className="min-w-full border-separate" style={{ borderSpacing: 0 }}>
                                 <thead>
                                 <tr className="bg-parley-cream">
-                                    <th className="border-b border-r border-parley-gold/70 p-2 text-left sticky left-0 bg-parley-cream z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
+                                    <th className="border-b border-r border-parley-gold/70 p-2 text-left sm:sticky left-0 bg-parley-cream z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
                                     {filteredRounds.map(round => (
                                         <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-[#F2E8D9] min-w-[160px]" colSpan={4}>Ronda {round.number}</th>
                                     ))}
-                                    <th className="border-b border-l border-parley-brown p-2 text-center bg-parley-brown text-white sticky right-0 z-30" colSpan={4} style={{ minWidth: colWidth * 4 }}>TOTALES</th>
+                                    <th className="border-b border-l border-parley-brown p-2 text-center bg-parley-brown text-white sm:sticky right-0 z-30" colSpan={4} style={{ minWidth: colWidth * 4 }}>TOTALES</th>
                                 </tr>
                                 <tr className="bg-parley-cream text-[10px] uppercase font-bold text-parley-brown">
                                     {filteredRounds.map(round => (
@@ -475,10 +475,10 @@ export default function Index({
                                             <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-yellow-100 w-10">AR</th>
                                         </Fragment>
                                     ))}
-                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-green-200 text-green-900 sticky z-30" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
-                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-red-200 text-red-900 sticky z-30" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
-                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-blue-200 text-blue-900 sticky z-30" style={{ right: colWidth * 1, width: colWidth }}>TP</th>
-                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-yellow-200 text-yellow-900 sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-green-200 text-green-900 sm:sticky z-30" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-red-200 text-red-900 sm:sticky z-30" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-blue-200 text-blue-900 sm:sticky z-30" style={{ right: colWidth * 1, width: colWidth }}>TP</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-yellow-200 text-yellow-900 sm:sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -494,7 +494,7 @@ export default function Index({
 
                                     return (
                                         <tr key={coleador.id} className={`${rowBgColor} hover:bg-[#F2E8D9] transition-colors group`}>
-                                            <td className={`border-b border-r border-parley-gold/50 p-2 font-bold sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-[#F2E8D9]`}>
+                                            <td className={`border-b border-r border-parley-gold/50 p-2 font-bold sm:sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-[#F2E8D9]`}>
                                                 {coleador.name}
                                             </td>
                                             {filteredRounds.map(round => {
@@ -528,11 +528,11 @@ export default function Index({
                                                     </Fragment>
                                                 );
                                             })}
-                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-green-900 text-lg sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
-                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-900 text-lg sticky z-20 ${cnBg} hover:bg-red-200 transition-colors group-hover:bg-red-200`} style={{ right: colWidth * 2 }}>{currentCN}</td>
-                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-blue-900 text-lg sticky z-20 ${tpBg} hover:bg-blue-200 transition-colors group-hover:bg-blue-200`} style={{ right: colWidth * 1 }}>{currentTP}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-green-900 text-lg sm:sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-900 text-lg sm:sticky z-20 ${cnBg} hover:bg-red-200 transition-colors group-hover:bg-red-200`} style={{ right: colWidth * 2 }}>{currentCN}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-blue-900 text-lg sm:sticky z-20 ${tpBg} hover:bg-blue-200 transition-colors group-hover:bg-blue-200`} style={{ right: colWidth * 1 }}>{currentTP}</td>
                                             <td
-                                                className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-700 text-lg sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`}
+                                                className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-700 text-lg sm:sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`}
                                                 style={{ right: 0 }}
                                                 onClick={() => openSummaryModal(coleador.id)}
                                             >
