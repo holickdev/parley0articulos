@@ -54,17 +54,17 @@ export default function Authenticated({
                     <div className="flex h-20 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center mr-6">
-                                <Link href="/dashboard">
+                                <Link href="/admin">
                                     <ApplicationLogo className="block h-14 w-auto" />
                                 </Link>
                             </div>
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
+                                    href={route('admin')}
+                                    active={route().current('admin')}
                                 >
-                                    Dashboard
+                                    Admin
                                 </NavLink>
                                 <NavLink
                                     href={route('admin.championships.index')}
@@ -192,10 +192,10 @@ export default function Authenticated({
                 >
                     <div className="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
+                            href={route('admin')}
+                            active={route().current('admin')}
                         >
-                            Dashboard
+                            Admin
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             href={route('admin.championships.index')}

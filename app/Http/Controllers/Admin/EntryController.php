@@ -18,12 +18,71 @@ class EntryController extends Controller
 {
     public function index(Championship $championship)
     {
+        $entries = Entry::where('championship_id', $championship->id)
+            ->with(['customer', 'payment', 'coleadores.scores' => function($query) use ($championship) {
+                $query->whereHas('round', function($q) use ($championship) {
+                    $q->where('championship_id', $championship->id);
+                });
+            }])
+            ->latest()
+            ->get()
+            ->map(function ($entry) {
+                $totalCE = 0;
+                $totalCN = 0;
+                $totalTP = 0;
+                $totalAR = 0;
+
+                foreach ($entry->coleadores as $coleador) {
+                    $coleadorCE = $coleador->scores->sum('effective_coleadas');
+                    $coleadorCN = $coleador->scores->sum('null_coleadas');
+                    $coleadorTP = $coleador->scores->sum('gate_bulls');
+                    $coleadorAR = $coleador->scores->reduce(function ($carry, $score) {
+                        $articles = is_array($score->articles) ? $score->articles : [];
+                        return $carry + array_sum($articles);
+                    }, 0);
+
+                    // Attach totals to coleador for individual view
+                    $coleador->total_ce = $coleadorCE;
+                    $coleador->total_cn = $coleadorCN;
+                    $coleador->total_tp = $coleadorTP;
+                    $coleador->total_ar = $coleadorAR;
+                    $coleador->net_ce = $coleadorCE - $coleadorAR;
+
+                    $totalCE += $coleadorCE;
+                    $totalCN += $coleadorCN;
+                    $totalTP += $coleadorTP;
+                    $totalAR += $coleadorAR;
+                }
+
+                $entry->total_ce = $totalCE;
+                $entry->total_cn = $totalCN;
+                $entry->total_tp = $totalTP;
+                $entry->total_ar = $totalAR;
+                $entry->net_ce = $totalCE - $totalAR;
+
+                return $entry;
+            })
+            ->sortByDesc('net_ce')
+            ->values()
+            ->map(function ($entry, $index) {
+                $entry->rank = $index + 1;
+                return $entry;
+            });
+
+        $topColeadores = DB::table('entry_coleador')
+            ->join('entries', 'entry_coleador.entry_id', '=', 'entries.id')
+            ->join('coleadores', 'entry_coleador.coleador_id', '=', 'coleadores.id')
+            ->where('entries.championship_id', $championship->id)
+            ->select('coleadores.id', 'coleadores.name', DB::raw('count(*) as entries_count'))
+            ->groupBy('coleadores.id', 'coleadores.name')
+            ->orderByDesc('entries_count')
+            ->limit(10)
+            ->get();
+
         return Inertia::render('Admin/Entries/Index', [
             'championship' => $championship,
-            'entries' => Entry::where('championship_id', $championship->id)
-                ->with(['customer', 'payment', 'coleadores'])
-                ->latest()
-                ->get()
+            'entries' => $entries,
+            'topColeadores' => $topColeadores
         ]);
     }
 

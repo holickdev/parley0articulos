@@ -10,27 +10,45 @@ import TextInput from '@/Components/TextInput';
 interface Coleador {
     id: number;
     name: string;
+    total_ce: number;
+    total_cn: number;
+    total_tp: number;
+    total_ar: number;
+    net_ce: number;
+    rank: number;
 }
 
 interface Entry {
     id: number;
     name: string;
     status: 'pending' | 'approved' | 'rejected';
-    customer: { 
+    total_ce: number;
+    total_cn: number;
+    total_tp: number;
+    total_ar: number;
+    net_ce: number;
+    rank: number;
+    customer: {
         id: number;
-        name: string; 
+        name: string;
         identification: string;
         phone: string;
     };
-    payment: { 
+    payment: {
         id: number;
-        reference: string; 
+        reference: string;
         amount_bs: string;
         bank: string;
         payment_date: string;
         phone: string;
     };
     coleadores: Coleador[];
+}
+
+interface TopColeador {
+    id: number;
+    name: string;
+    entries_count: number;
 }
 
 interface Championship {
@@ -50,16 +68,16 @@ const statusLabels = {
     rejected: 'Rechazado',
 };
 
-export default function Index({ championship, entries }: { championship: Championship, entries: Entry[] }) {
+export default function Index({ championship, entries, topColeadores }: { championship: Championship, entries: Entry[], topColeadores: TopColeador[] }) {
     const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
-    const [modalType, setModalType] = useState<'coleadores' | 'payment' | 'customer' | null>(null);
+    const [modalType, setModalType] = useState<'coleadores' | 'payment' | 'customer' | 'topColeadores' | null>(null);
 
     // DataTable States
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
-    const [sortBy, setSortBy] = useState<'name' | 'customer' | 'amount'>('name');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [sortBy, setSortBy] = useState<'name' | 'customer' | 'amount' | 'ce' | 'cn' | 'tp' | 'ar'>('ce');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
     // DataTable Logic
     const formatBs = (value: string | number) => {
@@ -87,7 +105,7 @@ export default function Index({ championship, entries }: { championship: Champio
             )
             .sort((a, b) => {
                 let valA: any, valB: any;
-                
+
                 if (sortBy === 'name') {
                     valA = a.name.toLowerCase();
                     valB = b.name.toLowerCase();
@@ -97,6 +115,18 @@ export default function Index({ championship, entries }: { championship: Champio
                 } else if (sortBy === 'amount') {
                     valA = parseFloat(a.payment.amount_bs);
                     valB = parseFloat(b.payment.amount_bs);
+                } else if (sortBy === 'ce') {
+                    valA = a.net_ce;
+                    valB = b.net_ce;
+                } else if (sortBy === 'cn') {
+                    valA = a.total_cn;
+                    valB = b.total_cn;
+                } else if (sortBy === 'tp') {
+                    valA = a.total_tp;
+                    valB = b.total_tp;
+                } else if (sortBy === 'ar') {
+                    valA = a.total_ar;
+                    valB = b.total_ar;
                 }
 
                 if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
@@ -111,7 +141,7 @@ export default function Index({ championship, entries }: { championship: Champio
         currentPage * itemsPerPage
     );
 
-    const toggleSort = (column: 'name' | 'customer' | 'amount') => {
+    const toggleSort = (column: 'name' | 'customer' | 'amount' | 'ce' | 'cn' | 'tp' | 'ar') => {
         if (sortBy === column) {
             setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
         } else {
@@ -149,7 +179,7 @@ export default function Index({ championship, entries }: { championship: Champio
             <div className="py-8">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
-                        <Link 
+                        <Link
                             href={route('admin.championships.index')}
                             className="text-sm text-parley-brown/50 hover:text-parley-red transition-colors mb-2 inline-block"
                         >
@@ -159,21 +189,29 @@ export default function Index({ championship, entries }: { championship: Champio
                             <h1 className="text-2xl sm:text-3xl font-bold text-parley-brown leading-tight">
                                 Cuadros: {championship.name}
                             </h1>
-                            <Link href={route('admin.championships.entries.create', championship.id)} className="w-full sm:w-auto">
-                                <PrimaryButton className="w-full sm:w-auto justify-center py-3 sm:py-2 text-sm">
-                                    Registrar Cuadro <span className="ml-2 text-lg">+</span>
-                                </PrimaryButton>
-                            </Link>
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                <SecondaryButton
+                                    onClick={() => setModalType('topColeadores')}
+                                    className="justify-center py-3 sm:py-2 text-sm"
+                                >
+                                    Top 10 Más Jugados
+                                </SecondaryButton>
+                                <Link href={route('admin.championships.entries.create', championship.id)} className="w-full sm:w-auto">
+                                    <PrimaryButton className="w-full sm:w-auto justify-center py-3 sm:py-2 text-sm">
+                                        Registrar Cuadro <span className="ml-2 text-lg">+</span>
+                                    </PrimaryButton>
+                                </Link>
+                            </div>
                         </div>
                     </div>
 
                     {/* Toolbar de Búsqueda y Filtros */}
                     <div className="bg-white p-4 rounded-t-lg border-x border-t border-parley-gold/50 shadow-sm flex flex-col lg:flex-row gap-4 justify-between items-center">
-                        <div className="flex items-center gap-4 w-full lg:w-auto">
+                        <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-parley-brown">Ver</span>
-                                <select 
-                                    value={itemsPerPage} 
+                                <select
+                                    value={itemsPerPage}
                                     onChange={(e) => {
                                         setItemsPerPage(Number(e.target.value));
                                         setCurrentPage(1);
@@ -185,6 +223,39 @@ export default function Index({ championship, entries }: { championship: Champio
                                     <option value={50}>50</option>
                                 </select>
                                 <span className="text-sm font-medium text-parley-brown">filas</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-parley-brown">Ordenar por</span>
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value as any)}
+                                    className="border-parley-gold/50 focus:ring-parley-red focus:border-parley-red rounded-md text-sm py-1 pr-8"
+                                >
+                                    <option value="name">Cuadro</option>
+                                    <option value="customer">Cliente</option>
+                                    <option value="amount">Monto</option>
+                                    <option value="ce">CE (Acumulado)</option>
+                                    <option value="cn">CN (Acumulado)</option>
+                                    <option value="tp">TP (Acumulado)</option>
+                                    <option value="ar">AR (Acumulado)</option>
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                    className="p-1.5 bg-parley-cream hover:bg-parley-cream/50 border border-parley-gold/50 rounded-md transition-colors"
+                                    title={sortDirection === 'asc' ? 'Orden Ascendente' : 'Orden Descendente'}
+                                >
+                                    {sortDirection === 'asc' ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-1v12m0 0l-4-4m4 4l4-4" />
+                                        </svg>
+                                    )}
+                                </button>
                             </div>
                         </div>
 
@@ -211,6 +282,7 @@ export default function Index({ championship, entries }: { championship: Champio
                             <table className="min-w-full divide-y divide-parley-gold/20">
                                 <thead className="bg-parley-cream">
                                     <tr>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 w-12">Pos</th>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('name')}>
                                             <div className="flex items-center gap-1">
                                                 Cuadro
@@ -243,16 +315,59 @@ export default function Index({ championship, entries }: { championship: Champio
                                                 )}
                                             </div>
                                         </th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('ce')}>
+                                            <div className="flex items-center gap-1">
+                                                CE
+                                                {sortBy === 'ce' && (
+                                                    <svg className={`h-3 w-3 ${sortDirection === 'desc' ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('cn')}>
+                                            <div className="flex items-center gap-1">
+                                                CN
+                                                {sortBy === 'cn' && (
+                                                    <svg className={`h-3 w-3 ${sortDirection === 'desc' ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('tp')}>
+                                            <div className="flex items-center gap-1">
+                                                TP
+                                                {sortBy === 'tp' && (
+                                                    <svg className={`h-3 w-3 ${sortDirection === 'desc' ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('ar')}>
+                                            <div className="flex items-center gap-1">
+                                                AR
+                                                {sortBy === 'ar' && (
+                                                    <svg className={`h-3 w-3 ${sortDirection === 'desc' ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </th>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">Estado</th>
                                         <th className="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider text-parley-brown/60">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-parley-gold/20 bg-white">
-                                    {paginatedEntries.map((entry) => (
+                                    {paginatedEntries.map((entry, index) => (
                                         <tr key={entry.id} className="hover:bg-parley-cream/30 transition-colors">
+                                            <td className="px-4 py-4 text-sm font-bold text-parley-brown/40">
+                                                {entry.rank}
+                                            </td>
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown">{entry.name}</td>
                                             <td className="px-4 py-4 text-sm">
-                                                <button 
+                                                <button
                                                     onClick={() => openModal(entry, 'coleadores')}
                                                     className="inline-flex items-center text-parley-red hover:text-parley-brown transition-colors group"
                                                     title="Ver Coleadores"
@@ -281,6 +396,10 @@ export default function Index({ championship, entries }: { championship: Champio
                                                 </button>
                                             </td>
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown">{formatBs(entry.payment.amount_bs)}</td>
+                                            <td className="px-4 py-4 text-sm font-bold text-green-700">{entry.net_ce}</td>
+                                            <td className="px-4 py-4 text-sm font-bold text-red-700">{entry.total_cn}</td>
+                                            <td className="px-4 py-4 text-sm font-bold text-blue-700">{entry.total_tp}</td>
+                                            <td className="px-4 py-4 text-sm font-bold text-orange-700">-{entry.total_ar}</td>
                                             <td className="px-4 py-4 text-sm">
                                                 <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded-full ${statusStyles[entry.status]}`}>
                                                     {statusLabels[entry.status]}
@@ -344,8 +463,8 @@ export default function Index({ championship, entries }: { championship: Champio
                             </div>
                             {totalPages > 1 && (
                                 <div className="flex items-center gap-2">
-                                    <button 
-                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                         disabled={currentPage === 1}
                                         className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
                                     >Anterior</button>
@@ -355,15 +474,15 @@ export default function Index({ championship, entries }: { championship: Champio
                                                 key={i}
                                                 onClick={() => setCurrentPage(i + 1)}
                                                 className={`w-8 h-8 rounded-md text-sm font-bold transition-colors ${
-                                                    currentPage === i + 1 
-                                                        ? 'bg-parley-red text-white shadow-sm' 
+                                                    currentPage === i + 1
+                                                        ? 'bg-parley-red text-white shadow-sm'
                                                         : 'bg-white border border-parley-gold/50 text-parley-brown hover:bg-parley-cream'
                                                 }`}
                                             >{i + 1}</button>
                                         ))}
                                     </div>
-                                    <button 
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                         disabled={currentPage === totalPages}
                                         className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
                                     >Siguiente</button>
@@ -377,20 +496,93 @@ export default function Index({ championship, entries }: { championship: Champio
             {/* Modals */}
             <Modal show={modalType !== null} onClose={closeModal}>
                 <div className="p-6">
-                    {modalType === 'coleadores' && selectedEntry && (
+                    {modalType === 'topColeadores' && (
                         <div>
                             <h3 className="text-lg font-bold text-parley-brown border-b border-parley-gold/20 pb-2 mb-4">
-                                Coleadores en "{selectedEntry.name}"
+                                Top 10 Coleadores Más Jugados
                             </h3>
+                            <div className="overflow-hidden rounded-xl border border-parley-gold/20 shadow-sm bg-white">
+                                <table className="min-w-full divide-y divide-parley-gold/10">
+                                    <thead className="bg-parley-cream">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-parley-brown/50 w-16">Pos</th>
+                                            <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-parley-brown/50">Coleador</th>
+                                            <th className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-parley-brown/50 w-24">Cuadros</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-parley-gold/10">
+                                        {topColeadores.map((coleador, index) => (
+                                            <tr key={coleador.id} className="hover:bg-parley-cream/20 transition-colors">
+                                                <td className="px-4 py-3 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+                                                        index === 0 ? 'bg-parley-gold text-white' : 
+                                                        index === 1 ? 'bg-gray-400 text-white' : 
+                                                        index === 2 ? 'bg-orange-400 text-white' : 
+                                                        'bg-parley-cream text-parley-brown'
+                                                    }`}>
+                                                        {index + 1}
+                                                    </span>
+                                                </td>                                                <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-parley-brown">
+                                                    {coleador.name}
+                                                </td>
+                                                <td className="px-4 py-3 whitespace-nowrap text-center text-sm font-black text-parley-red">
+                                                    {coleador.entries_count}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {topColeadores.length === 0 && (
+                                            <tr>
+                                                <td colSpan={3} className="px-4 py-10 text-center text-parley-brown/40 italic text-sm">
+                                                    Aún no hay cuadros registrados.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {modalType === 'coleadores' && selectedEntry && (
+                        <div>
+                            <div className="flex justify-between items-center border-b border-parley-gold/20 pb-2 mb-4 pr-3">
+                                <h3 className="text-lg font-bold text-parley-brown">
+                                    Coleadores en "{selectedEntry.name}"
+                                </h3>
+                                <div className="flex gap-4 text-xs font-bold uppercase text-parley-brown/60">
+                                    <span className="w-6 text-center">CE</span>
+                                    <span className="w-6 text-center">CN</span>
+                                    <span className="w-6 text-center">TP</span>
+                                    <span className="w-6 text-center">AR</span>
+                                </div>
+                            </div>
                             <ul className="space-y-2">
                                 {selectedEntry.coleadores.map((coleador, idx) => (
-                                    <li key={coleador.id} className="flex items-center p-3 bg-parley-cream rounded-lg border border-parley-gold/10">
-                                        <span className="w-8 h-8 rounded-full bg-parley-red text-white flex items-center justify-center font-bold mr-3 text-xs shadow-sm">
-                                            {idx + 1}
-                                        </span>
-                                        <span className="text-parley-brown font-bold">{coleador.name}</span>
+                                    <li key={coleador.id} className="flex items-center justify-between p-3 bg-parley-cream rounded-lg border border-parley-gold/10">
+                                        <div className="flex items-center">
+                                            <span className="w-8 h-8 rounded-full bg-parley-red text-white flex items-center justify-center font-bold mr-3 text-xs shadow-sm">
+                                                {idx + 1}
+                                            </span>
+                                            <span className="text-parley-brown font-bold">{coleador.name}</span>
+                                        </div>
+                                        <div className="flex gap-4 text-sm font-bold">
+                                            <span className="w-6 text-center text-green-700">{coleador.net_ce}</span>
+                                            <span className="w-6 text-center text-red-700">{coleador.total_cn}</span>
+                                            <span className="w-6 text-center text-blue-700">{coleador.total_tp}</span>
+                                            <span className="w-6 text-center text-orange-700">-{coleador.total_ar}</span>
+                                        </div>
                                     </li>
-                                ))}                            </ul>
+                                ))}
+                            </ul>
+                            <div className="mt-4 pt-4 border-t border-parley-gold/20 flex justify-between items-center font-black text-parley-brown text-sm pr-3">
+                                <span>TOTAL ACUMULADO</span>
+                                <div className="flex gap-4">
+                                    <span className="w-6 text-center text-green-700">{selectedEntry.net_ce}</span>
+                                    <span className="w-6 text-center text-red-700">{selectedEntry.total_cn}</span>
+                                    <span className="w-6 text-center text-blue-700">{selectedEntry.total_tp}</span>
+                                    <span className="w-6 text-center text-orange-700">-{selectedEntry.total_ar}</span>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -399,18 +591,18 @@ export default function Index({ championship, entries }: { championship: Champio
                             <h3 className="text-lg font-bold text-parley-brown border-b border-parley-gold/20 pb-2 mb-4">
                                 Datos del Cliente
                             </h3>
-                            <div className="grid grid-cols-1 gap-6">
-                                <div>
-                                    <p className="text-[10px] text-parley-brown/40 uppercase font-bold tracking-wider">Nombre Completo</p>
-                                    <p className="text-parley-brown font-bold text-lg">{selectedEntry.customer.name}</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-parley-cream p-5 rounded-xl border border-parley-gold/10">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <div>
-                                        <p className="text-[10px] text-parley-brown/40 uppercase font-bold tracking-wider">Cédula</p>
+                                        <p className="text-[10px] text-parley-brown/40 uppercase font-bold tracking-wider mb-1">Nombre Completo</p>
+                                        <p className="text-parley-brown font-bold leading-tight">{selectedEntry.customer.name}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-parley-brown/40 uppercase font-bold tracking-wider mb-1">Cédula</p>
                                         <p className="text-parley-brown font-bold">{selectedEntry.customer.identification}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-parley-brown/40 uppercase font-bold tracking-wider">Teléfono</p>
+                                        <p className="text-[10px] text-parley-brown/40 uppercase font-bold tracking-wider mb-1">Teléfono</p>
                                         <p className="text-parley-brown font-bold">{selectedEntry.customer.phone}</p>
                                     </div>
                                 </div>
