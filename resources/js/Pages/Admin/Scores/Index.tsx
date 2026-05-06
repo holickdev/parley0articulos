@@ -33,11 +33,18 @@ interface LeaderboardEntry {
     total_points: number;
 }
 
+// NUEVO: Interfaz para manejar los artículos como arreglo en la UI
+interface ArticleEntry {
+    id: string;
+    name: string;
+    points: number;
+}
+
 interface ScoreData {
     effective_coleadas: number | string;
     null_coleadas: number | string;
     gate_bulls: number | string;
-    articles: Record<string, number>;
+    articles: ArticleEntry[]; // Cambiado a arreglo
 }
 
 interface Props {
@@ -48,13 +55,13 @@ interface Props {
     leaderboard: LeaderboardEntry[];
 }
 
-export default function Index({ 
-    championship, 
-    rounds, 
-    coleadores, 
-    scoresMap, 
-    leaderboard 
-}: Props) {
+export default function Index({
+                                  championship,
+                                  rounds,
+                                  coleadores,
+                                  scoresMap,
+                                  leaderboard
+                              }: Props) {
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
@@ -71,15 +78,24 @@ export default function Index({
     const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
     const [summaryColeadorId, setSummaryColeadorId] = useState<number | null>(null);
 
-    const { data, setData, post, processing, recentlySuccessful } = useForm({
+    // MODIFICADO: useForm ahora usa transform e inicializa los artículos como Arreglos
+    const { data, setData, post, processing, recentlySuccessful, transform } = useForm({
         scores: rounds.reduce((accR, round) => {
             accR[round.id] = coleadores.reduce((accC, coleador) => {
                 const existing = scoresMap[round.id]?.[coleador.id];
+
+                // Convertimos el objeto a un Arreglo con IDs fijos para React
+                const articlesArray = Object.entries(existing?.articles ?? {}).map(([name, points]) => ({
+                    id: Math.random().toString(36).substring(2, 9),
+                    name: name,
+                    points: Number(points)
+                }));
+
                 accC[coleador.id] = {
                     effective_coleadas: existing?.effective_coleadas ?? 0,
                     null_coleadas: existing?.null_coleadas ?? 0,
                     gate_bulls: existing?.gate_bulls ?? 0,
-                    articles: existing?.articles ?? {},
+                    articles: articlesArray,
                 };
                 return accC;
             }, {} as Record<number, ScoreData>);
@@ -87,14 +103,48 @@ export default function Index({
         }, {} as Record<number, Record<number, ScoreData>>)
     });
 
-    const sumArticles = (articles: Record<string, number>) => {
-        return Object.values(articles).reduce((sum, val) => sum + val, 0);
+    // NUEVO: Transforma el arreglo de vuelta a Objeto antes de enviar al backend
+    transform((currentData) => {
+        const transformedScores: any = {};
+        Object.keys(currentData.scores).forEach(roundId => {
+            transformedScores[roundId] = {};
+            Object.keys(currentData.scores[roundId]).forEach(coleadorId => {
+                const cell = currentData.scores[roundId][coleadorId];
+                const articlesObj: Record<string, number> = {};
+
+                cell.articles.forEach((a: ArticleEntry) => {
+                    if (a.name.trim() !== '') {
+                        articlesObj[a.name] = a.points;
+                    }
+                });
+
+                transformedScores[roundId][coleadorId] = {
+                    ...cell,
+                    articles: articlesObj
+                };
+            });
+        });
+        return {
+            ...currentData,
+            scores: transformedScores
+        };
+    });
+
+    // Suma para arreglos de UI
+    const sumArticles = (articles: ArticleEntry[]) => {
+        return articles.reduce((sum, val) => sum + (Number(val.points) || 0), 0);
+    };
+
+    // Suma para el objeto original de la Base de Datos
+    const sumRecordArticles = (articles: Record<string, number> | undefined) => {
+        if (!articles) return 0;
+        return Object.values(articles).reduce((sum, val) => sum + Number(val), 0);
     };
 
     const toggleRound = (roundId: number) => {
-        setVisibleRounds(prev => 
-            prev.includes(roundId) 
-                ? prev.filter(id => id !== roundId) 
+        setVisibleRounds(prev =>
+            prev.includes(roundId)
+                ? prev.filter(id => id !== roundId)
                 : [...prev, roundId]
         );
     };
@@ -106,35 +156,34 @@ export default function Index({
     const processedColeadores = useMemo(() => {
         return coleadores.map(coleador => {
             let persistedCE = 0, persistedCN = 0, persistedTP = 0, persistedAR = 0;
-            // Solo sumamos para el ordenamiento lo que está YA GUARDADO (scoresMap)
-            // Esto evita que las filas salten mientras el usuario escribe
+
             filteredRounds.forEach(r => {
                 const s = scoresMap[r.id]?.[coleador.id];
                 persistedCE += Number(s?.effective_coleadas || 0);
                 persistedCN += Number(s?.null_coleadas || 0);
                 persistedTP += Number(s?.gate_bulls || 0);
-                persistedAR += sumArticles(s?.articles || {});
+                persistedAR += sumRecordArticles(s?.articles); // Usamos el helper original aquí
             });
             const persistedNetCE = persistedCE - persistedAR;
             return { ...coleador, persistedCE, persistedCN, persistedTP, persistedAR, persistedNetCE };
         })
-        .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
-        .sort((a, b) => {
-            let valA: any, valB: any;
-            
-            switch(sortBy) {
-                case 'name': valA = a.name; valB = b.name; break;
-                case 'ce': valA = a.persistedNetCE; valB = b.persistedNetCE; break;
-                case 'cn': valA = a.persistedCN; valB = b.persistedCN; break;
-                case 'tp': valA = a.persistedTP; valB = b.persistedTP; break;
-                case 'ar': valA = a.persistedAR; valB = b.persistedAR; break;
-                default: valA = a.persistedNetCE; valB = b.persistedNetCE;
-            }
+            .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+            .sort((a, b) => {
+                let valA: any, valB: any;
 
-            if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-            if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-            return 0;
-        });
+                switch(sortBy) {
+                    case 'name': valA = a.name; valB = b.name; break;
+                    case 'ce': valA = a.persistedNetCE; valB = b.persistedNetCE; break;
+                    case 'cn': valA = a.persistedCN; valB = b.persistedCN; break;
+                    case 'tp': valA = a.persistedTP; valB = b.persistedTP; break;
+                    case 'ar': valA = a.persistedAR; valB = b.persistedAR; break;
+                    default: valA = a.persistedNetCE; valB = b.persistedNetCE;
+                }
+
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
     }, [coleadores, search, scoresMap, filteredRounds, sortBy, sortDirection]);
 
     const totalPages = Math.ceil(processedColeadores.length / itemsPerPage);
@@ -157,7 +206,7 @@ export default function Index({
         });
     };
 
-    const handleArticlesChange = (roundId: number, coleadorId: number, articles: Record<string, number>) => {
+    const handleArticlesChange = (roundId: number, coleadorId: number, articles: ArticleEntry[]) => {
         setData('scores', {
             ...data.scores,
             [roundId]: {
@@ -196,10 +245,10 @@ export default function Index({
             </div>
             {totalPages > 1 && (
                 <div className="flex items-center gap-2">
-                    <button 
+                    <button
                         type="button"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-                        disabled={currentPage === 1} 
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
                         className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
                     >
                         Anterior
@@ -217,8 +266,8 @@ export default function Index({
                                     type="button"
                                     onClick={() => setCurrentPage(p)}
                                     className={`w-8 h-8 rounded-md text-sm font-bold transition-colors ${
-                                        currentPage === p 
-                                            ? 'bg-parley-red text-white shadow-sm' 
+                                        currentPage === p
+                                            ? 'bg-parley-red text-white shadow-sm'
                                             : 'bg-white border border-parley-gold/50 text-parley-brown hover:bg-parley-cream'
                                     }`}
                                 >
@@ -227,10 +276,10 @@ export default function Index({
                             );
                         })}
                     </div>
-                    <button 
+                    <button
                         type="button"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-                        disabled={currentPage === totalPages} 
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
                         className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
                     >
                         Siguiente
@@ -240,16 +289,16 @@ export default function Index({
         </div>
     );
 
-    const activeArticles = activeArticleTarget 
-        ? data.scores[activeArticleTarget.roundId][activeArticleTarget.coleadorId].articles 
-        : {};
+    const activeArticles: ArticleEntry[] = activeArticleTarget
+        ? data.scores[activeArticleTarget.roundId][activeArticleTarget.coleadorId].articles
+        : [];
 
-    const activeColeadorName = activeArticleTarget 
-        ? coleadores.find(c => c.id === activeArticleTarget.coleadorId)?.name 
+    const activeColeadorName = activeArticleTarget
+        ? coleadores.find(c => c.id === activeArticleTarget.coleadorId)?.name
         : '';
-        
-    const activeRoundNumber = activeArticleTarget 
-        ? rounds.find(r => r.id === activeArticleTarget.roundId)?.number 
+
+    const activeRoundNumber = activeArticleTarget
+        ? rounds.find(r => r.id === activeArticleTarget.roundId)?.number
         : '';
 
     return (
@@ -260,7 +309,7 @@ export default function Index({
                 <div className="mx-auto max-w-[99%] sm:px-4 lg:px-6">
                     <div className="mb-8 flex justify-between items-end">
                         <div>
-                            <Link 
+                            <Link
                                 href={route('admin.championships.index')}
                                 className="text-sm text-parley-brown/50 hover:text-parley-red transition-colors mb-2 inline-block"
                             >
@@ -275,21 +324,13 @@ export default function Index({
                         </PrimaryButton>
                     </div>
 
-                    <div className="space-y-4">
-                        {recentlySuccessful && (
-                        <div className="p-4 text-sm text-green-800 rounded-lg bg-green-50 font-bold border border-green-200 shadow-sm">
-                            ✓ Cambios guardados correctamente en la base de datos.
-                        </div>
-                    )}
-                    </div>
-
                     {/* Toolbar de Data Table */}
                     <div className="bg-white p-4 rounded-t-lg border-x border-t border-parley-gold/50 shadow-sm flex flex-col lg:flex-row gap-4 justify-between items-center">
                         <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-parley-brown">Ver</span>
-                                <select 
-                                    value={itemsPerPage} 
+                                <select
+                                    value={itemsPerPage}
                                     onChange={(e) => {
                                         setItemsPerPage(Number(e.target.value));
                                         setCurrentPage(1);
@@ -306,8 +347,8 @@ export default function Index({
 
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-parley-brown">Ordenar por</span>
-                                <select 
-                                    value={sortBy} 
+                                <select
+                                    value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
                                     className="border-parley-gold/50 focus:ring-parley-red focus:border-parley-red rounded-md text-sm py-1 pr-8"
                                 >
@@ -317,7 +358,7 @@ export default function Index({
                                     <option value="tp">Total TP</option>
                                     <option value="ar">Total AR</option>
                                 </select>
-                                <button 
+                                <button
                                     type="button"
                                     onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
                                     className="p-1.5 bg-parley-cream hover:bg-parley-cream/50 border border-parley-gold/50 rounded-md transition-colors"
@@ -337,7 +378,7 @@ export default function Index({
 
                             {/* Filtro de Rondas */}
                             <div className="relative">
-                                <button 
+                                <button
                                     type="button"
                                     onClick={() => setIsRoundsMenuOpen(!isRoundsMenuOpen)}
                                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-parley-gold/50 rounded-md text-sm font-medium text-parley-brown hover:bg-parley-cream transition-colors"
@@ -356,13 +397,13 @@ export default function Index({
                                         <div className="fixed inset-0 z-40" onClick={() => setIsRoundsMenuOpen(false)}></div>
                                         <div className="absolute left-0 mt-2 w-48 bg-white border border-parley-gold/30 rounded-md shadow-lg z-50 p-2">
                                             <div className="mb-2 pb-2 border-b border-parley-gold/20 flex justify-between px-2">
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     className="text-[10px] text-parley-red font-bold hover:underline"
                                                     onClick={() => setVisibleRounds(rounds.map(r => r.id))}
                                                 >Todas</button>
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     className="text-[10px] text-red-600 font-bold hover:underline"
                                                     onClick={() => setVisibleRounds([])}
                                                 >Ninguna</button>
@@ -370,8 +411,8 @@ export default function Index({
                                             <div className="max-h-60 overflow-y-auto">
                                                 {rounds.map(round => (
                                                     <label key={round.id} className="flex items-center px-2 py-1.5 hover:bg-parley-cream rounded cursor-pointer">
-                                                        <input 
-                                                            type="checkbox" 
+                                                        <input
+                                                            type="checkbox"
                                                             checked={visibleRounds.includes(round.id)}
                                                             onChange={() => toggleRound(round.id)}
                                                             className="rounded border-parley-gold/50 text-parley-red focus:ring-parley-red h-4 w-4"
@@ -411,65 +452,65 @@ export default function Index({
                         <div className="overflow-x-auto">
                             <table className="min-w-full border-separate" style={{ borderSpacing: 0 }}>
                                 <thead>
-                                    <tr className="bg-parley-cream">
-                                        <th className="border-b border-r border-parley-gold/70 p-2 text-left sticky left-0 bg-parley-cream z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
-                                        {filteredRounds.map(round => (
-                                            <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-[#F2E8D9] min-w-[160px]" colSpan={4}>Ronda {round.number}</th>
-                                        ))}
-                                        <th className="border-b border-l border-parley-brown p-2 text-center bg-parley-brown text-white sticky right-0 z-30" colSpan={4} style={{ minWidth: colWidth * 4 }}>TOTALES</th>
-                                    </tr>
-                                    <tr className="bg-parley-cream text-[10px] uppercase font-bold text-parley-brown">
-                                        {filteredRounds.map(round => (
-                                            <Fragment key={`sub-header-${round.id}`}>
-                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-green-100 w-10">CE</th>
-                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-red-100 w-10">CN</th>
-                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-blue-100 w-10">TP</th>
-                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-yellow-100 w-10">AR</th>
-                                            </Fragment>
-                                        ))}
-                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-green-200 text-green-900 sticky z-30" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
-                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-red-200 text-red-900 sticky z-30" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
-                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-blue-200 text-blue-900 sticky z-30" style={{ right: colWidth * 1, width: colWidth }}>TP</th>
-                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-yellow-200 text-yellow-900 sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
-                                    </tr>
+                                <tr className="bg-parley-cream">
+                                    <th className="border-b border-r border-parley-gold/70 p-2 text-left sticky left-0 bg-parley-cream z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
+                                    {filteredRounds.map(round => (
+                                        <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-[#F2E8D9] min-w-[160px]" colSpan={4}>Ronda {round.number}</th>
+                                    ))}
+                                    <th className="border-b border-l border-parley-brown p-2 text-center bg-parley-brown text-white sticky right-0 z-30" colSpan={4} style={{ minWidth: colWidth * 4 }}>TOTALES</th>
+                                </tr>
+                                <tr className="bg-parley-cream text-[10px] uppercase font-bold text-parley-brown">
+                                    {filteredRounds.map(round => (
+                                        <Fragment key={`sub-header-${round.id}`}>
+                                            <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-green-100 w-10">CE</th>
+                                            <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-red-100 w-10">CN</th>
+                                            <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-blue-100 w-10">TP</th>
+                                            <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-yellow-100 w-10">AR</th>
+                                        </Fragment>
+                                    ))}
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-green-200 text-green-900 sticky z-30" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-red-200 text-red-900 sticky z-30" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-blue-200 text-blue-900 sticky z-30" style={{ right: colWidth * 1, width: colWidth }}>TP</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-yellow-200 text-yellow-900 sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
+                                </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedColeadores.map((coleador, index) => {
-                                        let currentCE = 0, currentCN = 0, currentTP = 0, currentAR = 0;
-                                        const rowBgColor = index % 2 === 0 ? 'bg-white' : 'bg-parley-cream';
-                                        
-                                        const ceBg = index % 2 === 0 ? 'bg-green-50' : 'bg-green-100';
-                                        const cnBg = index % 2 === 0 ? 'bg-red-50' : 'bg-red-100';
-                                        const tpBg = index % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100';
-                                        const arBg = index % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100';
+                                {paginatedColeadores.map((coleador, index) => {
+                                    let currentCE = 0, currentCN = 0, currentTP = 0, currentAR = 0;
+                                    const rowBgColor = index % 2 === 0 ? 'bg-white' : 'bg-parley-cream';
 
-                                        return (
-                                            <tr key={coleador.id} className={`${rowBgColor} hover:bg-[#F2E8D9] transition-colors group`}>
-                                                <td className={`border-b border-r border-parley-gold/50 p-2 font-bold sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-[#F2E8D9]`}>
-                                                    {coleador.name}
-                                                </td>
-                                                {filteredRounds.map(round => {
-                                                    const s = data.scores[round.id]?.[coleador.id] || { effective_coleadas: 0, null_coleadas: 0, gate_bulls: 0, articles: {} };
-                                                    currentCE += Number(s.effective_coleadas || 0);
-                                                    currentCN += Number(s.null_coleadas || 0);
-                                                    currentTP += Number(s.gate_bulls || 0);
-                                                    const arTotal = sumArticles(s.articles);
-                                                    currentAR += arTotal;
-                                                    return (
-                                                        <Fragment key={`cell-${coleador.id}-${round.id}`}>
-                                                            <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-green-200 transition-colors">
-                                                                <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent" 
-                                                                    value={s.effective_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'effective_coleadas', e.target.value)} />
+                                    const ceBg = index % 2 === 0 ? 'bg-green-50' : 'bg-green-100';
+                                    const cnBg = index % 2 === 0 ? 'bg-red-50' : 'bg-red-100';
+                                    const tpBg = index % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100';
+                                    const arBg = index % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100';
+
+                                    return (
+                                        <tr key={coleador.id} className={`${rowBgColor} hover:bg-[#F2E8D9] transition-colors group`}>
+                                            <td className={`border-b border-r border-parley-gold/50 p-2 font-bold sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-[#F2E8D9]`}>
+                                                {coleador.name}
+                                            </td>
+                                            {filteredRounds.map(round => {
+                                                const s = data.scores[round.id]?.[coleador.id] || { effective_coleadas: 0, null_coleadas: 0, gate_bulls: 0, articles: [] };
+                                                currentCE += Number(s.effective_coleadas || 0);
+                                                currentCN += Number(s.null_coleadas || 0);
+                                                currentTP += Number(s.gate_bulls || 0);
+                                                const arTotal = sumArticles(s.articles);
+                                                currentAR += arTotal;
+                                                return (
+                                                    <Fragment key={`cell-${coleador.id}-${round.id}`}>
+                                                        <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-green-200 transition-colors">
+                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent"
+                                                                   value={s.effective_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'effective_coleadas', e.target.value)} />
                                                         </td>
                                                         <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-red-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent" 
-                                                                value={s.null_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'null_coleadas', e.target.value)} />
+                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent"
+                                                                   value={s.null_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'null_coleadas', e.target.value)} />
                                                         </td>
                                                         <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-blue-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent" 
-                                                                value={s.gate_bulls} onChange={(e) => handleInputChange(round.id, coleador.id, 'gate_bulls', e.target.value)} />
+                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent"
+                                                                   value={s.gate_bulls} onChange={(e) => handleInputChange(round.id, coleador.id, 'gate_bulls', e.target.value)} />
                                                         </td>
-                                                        <td 
+                                                        <td
                                                             className={`border-b border-r border-parley-gold/50 p-2 text-center text-sm cursor-pointer hover:bg-yellow-200 transition-colors font-bold ${arTotal > 0 ? 'text-red-600' : 'text-parley-brown/40'}`}
                                                             onClick={() => openArticlesModal(round.id, coleador.id)}
                                                         >
@@ -481,8 +522,8 @@ export default function Index({
                                             <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-green-900 text-sm sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
                                             <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-red-900 text-sm sticky z-20 ${cnBg} hover:bg-red-200 transition-colors group-hover:bg-red-200`} style={{ right: colWidth * 2 }}>{currentCN}</td>
                                             <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-blue-900 text-sm sticky z-20 ${tpBg} hover:bg-blue-200 transition-colors group-hover:bg-blue-200`} style={{ right: colWidth * 1 }}>{currentTP}</td>
-                                            <td 
-                                                className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-red-700 text-sm sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`} 
+                                            <td
+                                                className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-red-700 text-sm sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`}
                                                 style={{ right: 0 }}
                                                 onClick={() => openSummaryModal(coleador.id)}
                                             >
@@ -499,6 +540,7 @@ export default function Index({
                 </div>
             </div>
 
+            {/* Modal de Crear/Editar Artículos */}
             <Modal show={isArticlesModalOpen} onClose={() => setIsArticlesModalOpen(false)} maxWidth="md">
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-6">
@@ -509,23 +551,21 @@ export default function Index({
                     </div>
 
                     <div className="space-y-4">
-                        {Object.entries(activeArticles).length === 0 && (
+                        {activeArticles.length === 0 && (
                             <div className="text-center py-4 bg-parley-cream rounded-lg border-2 border-dashed border-parley-gold/30 text-parley-brown/60 italic">
                                 No hay artículos registrados para esta ronda.
                             </div>
                         )}
-                        
-                        {Object.entries(activeArticles).map(([name, points], idx) => (
-                            <div key={`active-article-${idx}-${name}`} className="flex gap-4 items-end bg-parley-cream p-3 rounded-lg border border-parley-gold/30">
+
+                        {activeArticles.map((article, idx) => (
+                            <div key={article.id} className="flex gap-4 items-end bg-parley-cream p-3 rounded-lg border border-parley-gold/30">
                                 <div className="w-32 sm:w-48">
                                     <InputLabel value="Nombre" />
-                                    <TextInput 
-                                        value={name}
+                                    <TextInput
+                                        value={article.name}
                                         onChange={(e) => {
-                                            const newArticles = { ...activeArticles };
-                                            const val = newArticles[name];
-                                            delete newArticles[name];
-                                            newArticles[e.target.value] = val;
+                                            const newArticles = [...activeArticles];
+                                            newArticles[idx] = { ...article, name: e.target.value };
                                             if (activeArticleTarget) handleArticlesChange(activeArticleTarget.roundId, activeArticleTarget.coleadorId, newArticles);
                                         }}
                                         className="w-full mt-1"
@@ -534,24 +574,22 @@ export default function Index({
                                 </div>
                                 <div className="w-20 sm:w-24">
                                     <InputLabel value="Puntos" />
-                                    <TextInput 
+                                    <TextInput
                                         type="number"
                                         min="0"
-                                        value={points.toString()}
+                                        value={article.points.toString()}
                                         onChange={(e) => {
-                                            const newArticles = { ...activeArticles };
-                                            const val = parseInt(e.target.value) || 0;
-                                            newArticles[name] = Math.max(0, val);
+                                            const newArticles = [...activeArticles];
+                                            newArticles[idx] = { ...article, points: parseInt(e.target.value) || 0 };
                                             if (activeArticleTarget) handleArticlesChange(activeArticleTarget.roundId, activeArticleTarget.coleadorId, newArticles);
                                         }}
                                         className="w-full mt-1"
                                     />
                                 </div>
-                                <button 
+                                <button
                                     type="button"
                                     onClick={() => {
-                                        const newArticles = { ...activeArticles };
-                                        delete newArticles[name];
+                                        const newArticles = activeArticles.filter(a => a.id !== article.id);
                                         if (activeArticleTarget) handleArticlesChange(activeArticleTarget.roundId, activeArticleTarget.coleadorId, newArticles);
                                     }}
                                     className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors mb-0.5"
@@ -564,19 +602,24 @@ export default function Index({
                         ))}
 
                         <div className="flex justify-between items-center pt-4 border-t border-parley-gold/20">
-                            <button 
+                            <button
                                 type="button"
                                 onClick={() => {
-                                    const newArticles = { ...activeArticles, "": 0 };
+                                    const newArticles = [...activeArticles, {
+                                        id: Math.random().toString(36).substring(2, 9),
+                                        name: '',
+                                        points: 0
+                                    }];
                                     if (activeArticleTarget) handleArticlesChange(activeArticleTarget.roundId, activeArticleTarget.coleadorId, newArticles);
                                 }}
                                 className="inline-flex items-center text-sm font-bold text-parley-red hover:text-parley-brown"
                             >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                 </svg>
                                 AGREGAR ARTÍCULO
                             </button>
-                            
+
                             <div className="text-lg font-bold">
                                 Total Resta: <span className="text-red-600">-{sumArticles(activeArticles)}</span>
                             </div>
@@ -591,6 +634,7 @@ export default function Index({
                 </div>
             </Modal>
 
+            {/* Modal de Resumen Total */}
             <Modal show={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} maxWidth="md">
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-6">
@@ -604,16 +648,18 @@ export default function Index({
 
                     <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
                         {summaryColeadorId && rounds.map(round => {
-                            const roundArticles = data.scores[round.id]?.[summaryColeadorId]?.articles || {};
-                            if (Object.keys(roundArticles).length === 0) return null;
+                            const roundArticles = data.scores[round.id]?.[summaryColeadorId]?.articles || [];
+                            const validArticles = roundArticles.filter(a => a.name.trim() !== '');
+                            if (validArticles.length === 0) return null;
 
                             return (
                                 <div key={round.id} className="border-l-4 border-parley-red pl-4 py-1">
                                     <h3 className="text-sm font-bold text-parley-brown/80 mb-2 uppercase">Ronda {round.number}</h3>
-                                    <div className="bg-parley-cream rounded-lg p-3 space-y-2">                                        {Object.entries(roundArticles).map(([name, points], idx) => (
-                                            <div key={`summary-article-${round.id}-${idx}-${name}`} className="flex justify-between items-center text-sm">
-                                                <span className="text-parley-brown font-medium">{name || '(Sin nombre)'}</span>
-                                                <span className="text-red-600 font-bold">-{points}</span>
+                                    <div className="bg-parley-cream rounded-lg p-3 space-y-2">
+                                        {validArticles.map((article) => (
+                                            <div key={`summary-article-${article.id}`} className="flex justify-between items-center text-sm">
+                                                <span className="text-parley-brown font-medium">{article.name}</span>
+                                                <span className="text-red-600 font-bold">-{article.points}</span>
                                             </div>
                                         ))}
                                         <div className="pt-2 border-t border-parley-gold/30 flex justify-between items-center font-bold text-sm">
@@ -625,7 +671,7 @@ export default function Index({
                             );
                         })}
 
-                        {summaryColeadorId && rounds.every(r => Object.keys(data.scores[r.id]?.[summaryColeadorId]?.articles || {}).length === 0) && (
+                        {summaryColeadorId && rounds.every(r => (data.scores[r.id]?.[summaryColeadorId]?.articles || []).filter(a => a.name.trim() !== '').length === 0) && (
                             <div className="text-center py-8 text-parley-brown/60 italic">
                                 No se encontraron artículos registrados para este coleador.
                             </div>
@@ -635,7 +681,7 @@ export default function Index({
                     <div className="mt-8 pt-4 border-t border-parley-gold/20 flex justify-between items-center">
                         <div className="text-lg font-bold">
                             Total Campeonato: <span className="text-red-600">
-                                -{summaryColeadorId ? rounds.reduce((acc, r) => acc + sumArticles(data.scores[r.id]?.[summaryColeadorId]?.articles || {}), 0) : 0}
+                                -{summaryColeadorId ? rounds.reduce((acc, r) => acc + sumArticles(data.scores[r.id]?.[summaryColeadorId]?.articles || []), 0) : 0}
                             </span>
                         </div>
                         <PrimaryButton onClick={() => setIsSummaryModalOpen(false)}>
