@@ -30,7 +30,7 @@ export default function Login({
 
     return (
         <GuestLayout>
-            <Head title="Log in" />
+            <Head title="Iniciar Sesión" />
 
             {status && (
                 <div className="mb-4 text-sm font-medium text-green-600">
@@ -96,12 +96,12 @@ export default function Login({
                             href={route('password.request')}
                             className="rounded-md text-sm text-parley-brown/80 underline hover:text-parley-brown focus:outline-none focus:ring-2 focus:ring-parley-red focus:ring-offset-2"
                         >
-                            Forgot your password?
+                            ¿Olvidaste tu contraseña?
                         </Link>
                     )}
 
                     <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
+                        Iniciar Sesión
                     </PrimaryButton>
                 </div>
             </form>
