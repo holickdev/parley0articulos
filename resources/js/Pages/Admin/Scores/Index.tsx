@@ -508,19 +508,19 @@ export default function Index({
                                                 return (
                                                     <Fragment key={`cell-${coleador.id}-${round.id}`}>
                                                         <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-green-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent"
+                                                            <input type="text" className="w-full border-none p-2 text-center text-lg font-bold focus:ring-2 focus:ring-parley-red bg-transparent"
                                                                    value={s.effective_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'effective_coleadas', e.target.value)} />
                                                         </td>
                                                         <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-red-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent"
+                                                            <input type="text" className="w-full border-none p-2 text-center text-lg font-bold focus:ring-2 focus:ring-parley-red bg-transparent"
                                                                    value={s.null_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'null_coleadas', e.target.value)} />
                                                         </td>
                                                         <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-blue-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-sm focus:ring-2 focus:ring-parley-red bg-transparent"
+                                                            <input type="text" className="w-full border-none p-2 text-center text-lg font-bold focus:ring-2 focus:ring-parley-red bg-transparent"
                                                                    value={s.gate_bulls} onChange={(e) => handleInputChange(round.id, coleador.id, 'gate_bulls', e.target.value)} />
                                                         </td>
                                                         <td
-                                                            className={`border-b border-r border-parley-gold/50 p-2 text-center text-sm cursor-pointer hover:bg-yellow-200 transition-colors font-bold ${arTotal > 0 ? 'text-red-600' : 'text-parley-brown/40'}`}
+                                                            className={`border-b border-r border-parley-gold/50 p-2 text-center text-lg cursor-pointer hover:bg-yellow-200 transition-colors font-black ${arTotal > 0 ? 'text-red-600' : 'text-parley-brown/40'}`}
                                                             onClick={() => openArticlesModal(round.id, coleador.id)}
                                                         >
                                                             {arTotal > 0 ? `-${arTotal}` : '0'}
@@ -528,11 +528,11 @@ export default function Index({
                                                     </Fragment>
                                                 );
                                             })}
-                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-green-900 text-sm sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
-                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-red-900 text-sm sticky z-20 ${cnBg} hover:bg-red-200 transition-colors group-hover:bg-red-200`} style={{ right: colWidth * 2 }}>{currentCN}</td>
-                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-blue-900 text-sm sticky z-20 ${tpBg} hover:bg-blue-200 transition-colors group-hover:bg-blue-200`} style={{ right: colWidth * 1 }}>{currentTP}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-green-900 text-lg sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-900 text-lg sticky z-20 ${cnBg} hover:bg-red-200 transition-colors group-hover:bg-red-200`} style={{ right: colWidth * 2 }}>{currentCN}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-blue-900 text-lg sticky z-20 ${tpBg} hover:bg-blue-200 transition-colors group-hover:bg-blue-200`} style={{ right: colWidth * 1 }}>{currentTP}</td>
                                             <td
-                                                className={`border-b border-l border-parley-gold/50 p-2 text-center font-bold text-red-700 text-sm sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`}
+                                                className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-700 text-lg sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`}
                                                 style={{ right: 0 }}
                                                 onClick={() => openSummaryModal(coleador.id)}
                                             >

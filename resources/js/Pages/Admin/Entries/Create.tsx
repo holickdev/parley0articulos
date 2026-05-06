@@ -241,7 +241,7 @@ export default function Create({ championship }: Props) {
                                     </svg>
                                 </div>
                                 <div className="flex flex-row sm:flex-col items-center sm:items-start gap-2 sm:gap-0 leading-none">
-                                    <span className="text-[10px] uppercase tracking-widest opacity-60">Tiempo</span>
+                                    <span className="text-[10px] uppercase tracking-widest opacity-60">Tiempo restante para realizar el pago</span>
                                     <span>{formatTime(timeLeft)}</span>
                                 </div>
                             </div>
@@ -340,7 +340,7 @@ export default function Create({ championship }: Props) {
                                     </div>
                                     <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
                                         <PrimaryButton type="button" onClick={nextStep} className="w-full sm:w-auto justify-center py-3 sm:py-2 text-sm">
-                                            Siguiente: Datos del Cuadro
+                                            Siguiente
                                         </PrimaryButton>
                                     </div>
                                 </div>
@@ -451,7 +451,7 @@ export default function Create({ championship }: Props) {
                                             disabled={data.coleadores.length !== championship.coleadores_count || !data.entry_name || isValidating}
                                             className="w-full sm:w-auto justify-center py-3 sm:py-2 text-sm"
                                         >
-                                            {isValidating ? 'Validando...' : 'Siguiente: Datos de Pago'}
+                                            {isValidating ? 'Validando...' : 'Siguiente'}
                                         </PrimaryButton>
                                     </div>
 

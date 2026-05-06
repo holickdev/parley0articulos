@@ -494,15 +494,25 @@ export default function Index({ championship, entries, topColeadores }: { champi
             </div>
 
             {/* Modals */}
-            <Modal show={modalType !== null} onClose={closeModal}>
-                <div className="p-6">
+            <Modal show={modalType !== null} onClose={closeModal} maxWidth="md">
+                <div className="relative p-6">
+                    {/* Botón X de Cierre */}
+                    <button 
+                        onClick={closeModal}
+                        className="absolute top-2 right-2 p-2 text-gray-400 hover:text-red-600 transition-colors z-10"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
                     {modalType === 'topColeadores' && (
                         <div>
-                            <h3 className="text-lg font-bold text-parley-brown border-b border-parley-gold/20 pb-2 mb-4">
+                            <h3 className="text-lg font-bold text-parley-brown border-b border-parley-gold/20 pb-2 mb-4 pr-8">
                                 Top 10 Coleadores Más Jugados
                             </h3>
-                            <div className="overflow-hidden rounded-xl border border-parley-gold/20 shadow-sm bg-white">
-                                <table className="min-w-full divide-y divide-parley-gold/10">
+                            <div className="overflow-hidden border-t border-parley-gold/20 bg-white -mx-6">
+                                <table className="min-w-full divide-y divide-parley-gold/10 text-sm">
                                     <thead className="bg-parley-cream">
                                         <tr>
                                             <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-parley-brown/50 w-16">Pos</th>
@@ -513,7 +523,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     <tbody className="divide-y divide-parley-gold/10">
                                         {topColeadores.map((coleador, index) => (
                                             <tr key={coleador.id} className="hover:bg-parley-cream/20 transition-colors">
-                                                <td className="px-4 py-3 whitespace-nowrap">
+                                                <td className="px-4 py-3 whitespace-nowrap text-center">
                                                     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
                                                         index === 0 ? 'bg-parley-gold text-white' : 
                                                         index === 1 ? 'bg-gray-400 text-white' : 
@@ -522,7 +532,8 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                                     }`}>
                                                         {index + 1}
                                                     </span>
-                                                </td>                                                <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-parley-brown">
+                                                </td>
+                                                <td className="px-4 py-3 text-sm font-bold text-parley-brown">
                                                     {coleador.name}
                                                 </td>
                                                 <td className="px-4 py-3 whitespace-nowrap text-center text-sm font-black text-parley-red">
@@ -560,7 +571,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                 {selectedEntry.coleadores.map((coleador, idx) => (
                                     <li key={coleador.id} className="flex items-center justify-between p-3 bg-parley-cream rounded-lg border border-parley-gold/10">
                                         <div className="flex items-center">
-                                            <span className="w-8 h-8 rounded-full bg-parley-red text-white flex items-center justify-center font-bold mr-3 text-xs shadow-sm">
+                                            <span className="w-8 h-8 rounded-full bg-parley-red text-white flex items-center justify-center font-bold mr-3 text-xs shadow-sm flex-shrink-0">
                                                 {idx + 1}
                                             </span>
                                             <span className="text-parley-brown font-bold">{coleador.name}</span>

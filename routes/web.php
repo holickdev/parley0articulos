@@ -5,18 +5,20 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+use App\Http\Controllers\Guest\PublicController;
 
-Route::get('/admin', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('admin');
+Route::get('/', [PublicController::class, 'index'])->name('home');
+Route::get('/championships/{championship}/entries', [PublicController::class, 'entries'])->name('public.entries');
+Route::get('/championships/{championship}/scores', [PublicController::class, 'scores'])->name('public.scores');
+Route::get('/championships/{championship}/entries/create', [PublicController::class, 'createEntry'])->name('public.entries.create');
+Route::post('/championships/{championship}/entries', [PublicController::class, 'storeEntry'])->name('public.entries.store');
+Route::post('/championships/{championship}/check-combination', [PublicController::class, 'checkCombination'])->name('public.entries.check');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/admin', function () {
+        return Inertia::render('Dashboard');
+    })->name('admin');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
