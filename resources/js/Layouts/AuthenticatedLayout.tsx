@@ -3,6 +3,7 @@ import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import Toast from '@/Components/Toast';
+import ErrorModal from '@/Components/ErrorModal';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState, useEffect } from 'react';
 
@@ -21,11 +22,16 @@ export default function Authenticated({
         type: 'success',
     });
 
+    const [errorModal, setErrorModal] = useState<{ show: boolean; message: string }>({
+        show: false,
+        message: '',
+    });
+
     useEffect(() => {
         if (flash.success) {
             setToast({ message: flash.success, type: 'success' });
         } else if (flash.error) {
-            setToast({ message: flash.error, type: 'error' });
+            setErrorModal({ show: true, message: flash.error });
         }
     }, [flash]);
 
@@ -35,6 +41,12 @@ export default function Authenticated({
                 message={toast.message} 
                 type={toast.type} 
                 onClose={() => setToast({ ...toast, message: null })} 
+            />
+
+            <ErrorModal
+                show={errorModal.show}
+                onClose={() => setErrorModal({ ...errorModal, show: false })}
+                message={errorModal.message}
             />
             
             <nav className="bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)]">

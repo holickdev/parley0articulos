@@ -6,6 +6,7 @@ import { FormEventHandler, useState, useMemo, Fragment } from 'react';
 import TextInput from '@/Components/TextInput';
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
+import ErrorModal from '@/Components/ErrorModal';
 
 interface Championship {
     id: number;
@@ -78,13 +79,16 @@ export default function Index({
     const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
     const [summaryColeadorId, setSummaryColeadorId] = useState<number | null>(null);
 
+    // Modal state for errors
+    const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+
     // MODIFICADO: useForm ahora usa transform e inicializa los artículos como Arreglos
-    const { data, setData, post, processing, recentlySuccessful, transform } = useForm({
+    const { data, setData, post, processing, recentlySuccessful, transform, errors } = useForm({
         scores: rounds.reduce((accR, round) => {
             accR[round.id] = coleadores.reduce((accC, coleador) => {
                 const existing = scoresMap[round.id]?.[coleador.id];
 
-                // Convertimos el objeto a un Arreglo con IDs fijos para React
+                // Convertimos el objeto a un Arreglo con ID fijos para React
                 const articlesArray = Object.entries(existing?.articles ?? {}).map(([name, points]) => ({
                     id: Math.random().toString(36).substring(2, 9),
                     name: name,
@@ -98,9 +102,9 @@ export default function Index({
                     articles: articlesArray,
                 };
                 return accC;
-            }, {} as Record<number, ScoreData>);
+            }, {} as Record<string, ScoreData>);
             return accR;
-        }, {} as Record<number, Record<number, ScoreData>>)
+        }, {} as Record<string, Record<string, ScoreData>>)
     });
 
     // NUEVO: Transforma el arreglo de vuelta a Objeto antes de enviar al backend
@@ -194,12 +198,13 @@ export default function Index({
 
     const handleInputChange = (roundId: number, coleadorId: number, field: keyof ScoreData, value: string) => {
         const val = value === '' ? '' : parseInt(value);
+        const scores = data.scores as any;
         setData('scores', {
-            ...data.scores,
+            ...scores,
             [roundId]: {
-                ...data.scores[roundId],
+                ...scores[roundId],
                 [coleadorId]: {
-                    ...data.scores[roundId][coleadorId],
+                    ...scores[roundId][coleadorId],
                     [field]: val
                 }
             }
@@ -207,12 +212,13 @@ export default function Index({
     };
 
     const handleArticlesChange = (roundId: number, coleadorId: number, articles: ArticleEntry[]) => {
+        const scores = data.scores as any;
         setData('scores', {
-            ...data.scores,
+            ...scores,
             [roundId]: {
-                ...data.scores[roundId],
+                ...scores[roundId],
                 [coleadorId]: {
-                    ...data.scores[roundId][coleadorId],
+                    ...scores[roundId][coleadorId],
                     articles: articles
                 }
             }
@@ -222,7 +228,8 @@ export default function Index({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         post(route('admin.championships.scores.store', championship.id), {
-            preserveScroll: true
+            preserveScroll: true,
+            onError: () => setIsErrorModalOpen(true),
         });
     };
 
@@ -476,6 +483,7 @@ export default function Index({
                                 </thead>
                                 <tbody>
                                 {paginatedColeadores.map((coleador, index) => {
+                                    const scores = data.scores as any;
                                     let currentCE = 0, currentCN = 0, currentTP = 0, currentAR = 0;
                                     const rowBgColor = index % 2 === 0 ? 'bg-white' : 'bg-parley-cream';
 
@@ -490,7 +498,8 @@ export default function Index({
                                                 {coleador.name}
                                             </td>
                                             {filteredRounds.map(round => {
-                                                const s = data.scores[round.id]?.[coleador.id] || { effective_coleadas: 0, null_coleadas: 0, gate_bulls: 0, articles: [] };
+                                                const s = scores[round.id]?.[coleador.id] || { effective_coleadas: 0, null_coleadas: 0, gate_bulls: 0, articles: [] };
+
                                                 currentCE += Number(s.effective_coleadas || 0);
                                                 currentCN += Number(s.null_coleadas || 0);
                                                 currentTP += Number(s.gate_bulls || 0);
@@ -648,15 +657,16 @@ export default function Index({
 
                     <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
                         {summaryColeadorId && rounds.map(round => {
-                            const roundArticles = data.scores[round.id]?.[summaryColeadorId]?.articles || [];
-                            const validArticles = roundArticles.filter(a => a.name.trim() !== '');
+                            const scores = data.scores;
+                            const roundArticles = scores[round.id]?.[summaryColeadorId]?.articles || [];
+                            const validArticles = roundArticles.filter((a: ArticleEntry) => a.name.trim() !== '');
                             if (validArticles.length === 0) return null;
 
                             return (
                                 <div key={round.id} className="border-l-4 border-parley-red pl-4 py-1">
                                     <h3 className="text-sm font-bold text-parley-brown/80 mb-2 uppercase">Ronda {round.number}</h3>
                                     <div className="bg-parley-cream rounded-lg p-3 space-y-2">
-                                        {validArticles.map((article) => (
+                                        {validArticles.map((article: ArticleEntry) => (
                                             <div key={`summary-article-${article.id}`} className="flex justify-between items-center text-sm">
                                                 <span className="text-parley-brown font-medium">{article.name}</span>
                                                 <span className="text-red-600 font-bold">-{article.points}</span>
@@ -671,7 +681,7 @@ export default function Index({
                             );
                         })}
 
-                        {summaryColeadorId && rounds.every(r => (data.scores[r.id]?.[summaryColeadorId]?.articles || []).filter(a => a.name.trim() !== '').length === 0) && (
+                        {summaryColeadorId && rounds.every(r => (data.scores[r.id]?.[summaryColeadorId]?.articles || []).filter((a: ArticleEntry) => a.name.trim() !== '').length === 0) && (
                             <div className="text-center py-8 text-parley-brown/60 italic">
                                 No se encontraron artículos registrados para este coleador.
                             </div>
@@ -690,6 +700,12 @@ export default function Index({
                     </div>
                 </div>
             </Modal>
+
+            <ErrorModal
+                show={isErrorModalOpen}
+                onClose={() => setIsErrorModalOpen(false)}
+                errors={errors}
+            />
         </AuthenticatedLayout>
     );
 }
