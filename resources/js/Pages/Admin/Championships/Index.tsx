@@ -8,7 +8,6 @@ interface Championship {
     coleadores_count: number;
     entry_price: string;
     status: 'open' | 'in_progress' | 'finished';
-    coleadores_count_count?: number; // from withCount('coleadores')
 }
 
 const statusLabels = {

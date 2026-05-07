@@ -7,7 +7,6 @@ interface Championship {
     coleadores_count: number;
     entry_price: string;
     status: 'open' | 'in_progress' | 'finished';
-    coleadores_count_count?: number; 
 }
 
 const statusLabels = {
@@ -69,10 +68,6 @@ export default function Index({ championships }: { championships: Championship[]
                                     <div className="flex justify-between items-end border-b border-parley-gold/10 pb-2">
                                         <span className="text-[11px] uppercase tracking-wider font-bold text-parley-brown/40">Nº Coleadores por Cuadro</span>
                                         <span className="text-sm font-bold text-parley-brown">{championship.coleadores_count}</span>
-                                    </div>
-                                    <div className="flex justify-between items-end border-b border-parley-gold/10 pb-2">
-                                        <span className="text-[11px] uppercase tracking-wider font-bold text-parley-brown/40">Total Participantes</span>
-                                        <span className="text-sm font-bold text-parley-brown">{championship.coleadores_count_count || 0}</span>
                                     </div>
                                 </div>
 
