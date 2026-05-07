@@ -13,9 +13,71 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Illuminate\Validation\ValidationException;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class EntryController extends Controller
 {
+    public function downloadPdf(Championship $championship)
+    {
+        $entries = Entry::where('championship_id', $championship->id)
+            ->with(['coleadores.scores' => function($query) use ($championship) {
+                $query->whereHas('round', function($q) use ($championship) {
+                    $q->where('championship_id', $championship->id);
+                });
+            }])
+            ->get()
+            ->map(function ($entry) {
+                $totalCE = 0;
+                $totalCN = 0;
+                $totalTP = 0;
+                $totalAR = 0;
+
+                foreach ($entry->coleadores as $coleador) {
+                    $coleadorCE = $coleador->scores->sum('effective_coleadas');
+                    $coleadorCN = $coleador->scores->sum('null_coleadas');
+                    $coleadorTP = $coleador->scores->sum('gate_bulls');
+                    $coleadorAR = $coleador->scores->reduce(function ($carry, $score) {
+                        $articles = is_array($score->articles) ? $score->articles : [];
+                        return $carry + array_sum($articles);
+                    }, 0);
+
+                    $coleador->total_ce = $coleadorCE;
+                    $coleador->total_cn = $coleadorCN;
+                    $coleador->total_tp = $coleadorTP;
+                    $coleador->total_ar = $coleadorAR;
+                    $coleador->net_ce = $coleadorCE - $coleadorAR;
+
+                    $totalCE += $coleadorCE;
+                    $totalCN += $coleadorCN;
+                    $totalTP += $coleadorTP;
+                    $totalAR += $coleadorAR;
+                }
+
+                $entry->total_ce = $totalCE;
+                $entry->total_cn = $totalCN;
+                $entry->total_tp = $totalTP;
+                $entry->total_ar = $totalAR;
+                $entry->net_ce = $totalCE - $totalAR;
+
+                return $entry;
+            })
+            ->sortByDesc('net_ce')
+            ->values();
+
+        $pdf = Pdf::loadView('reports.entries_pdf', [
+            'championship' => $championship,
+            'entries' => $entries,
+            'date' => now()->format('d/m/Y H:i'),
+            'orientation' => $championship->coleadores_count > 4 ? 'landscape' : 'portrait'
+        ]);
+
+        if ($championship->coleadores_count > 4) {
+            $pdf->setPaper('a4', 'landscape');
+        }
+
+        return $pdf->download("Listado de Cuadros - {$championship->name}.pdf");
+    }
+
     public function index(Championship $championship)
     {
         $entries = Entry::where('championship_id', $championship->id)

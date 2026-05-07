@@ -34,6 +34,7 @@ Route::middleware('auth')->group(function () {
         Route::post('championships/{championship}/scores', [\App\Http\Controllers\Admin\ScoreController::class, 'store'])->name('championships.scores.store');
 
         Route::resource('championships.entries', \App\Http\Controllers\Admin\EntryController::class);
+        Route::get('championships/{championship}/entries-pdf', [\App\Http\Controllers\Admin\EntryController::class, 'downloadPdf'])->name('championships.entries.pdf');
         Route::post('championships/{championship}/entries/check-combination', [\App\Http\Controllers\Admin\EntryController::class, 'checkCombination'])->name('championships.entries.check');
 
         Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);

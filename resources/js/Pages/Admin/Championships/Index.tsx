@@ -87,10 +87,6 @@ export default function Index({ championships }: { championships: Championship[]
                                                 <span className="text-[11px] uppercase tracking-wider font-bold text-parley-brown/40">Coleadores</span>
                                                 <span className="text-sm font-bold text-parley-brown">{championship.coleadores_count}</span>
                                             </div>
-                                            <div className="flex justify-between items-end border-b border-parley-gold/10 pb-2">
-                                                <span className="text-[11px] uppercase tracking-wider font-bold text-parley-brown/40">Participantes</span>
-                                                <span className="text-sm font-bold text-parley-brown">{championship.coleadores_count_count || 0}</span>
-                                            </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-3">

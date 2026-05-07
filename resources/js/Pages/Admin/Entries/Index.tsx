@@ -193,15 +193,27 @@ export default function Index({ championship, entries, topColeadores }: { champi
                             <h1 className="text-2xl sm:text-3xl font-bold text-parley-brown leading-tight">
                                 Cuadros: {championship.name}
                             </h1>
-                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto items-stretch">
+                                <a 
+                                    href={route('admin.championships.entries.pdf', championship.id)} 
+                                    target="_blank" 
+                                    className="inline-flex"
+                                >
+                                    <SecondaryButton className="w-full justify-center py-3 sm:py-2 text-sm border-parley-red text-parley-red hover:bg-parley-red hover:text-white h-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        Imprimir Cuadros
+                                    </SecondaryButton>
+                                </a>
                                 <SecondaryButton
                                     onClick={() => setModalType('topColeadores')}
                                     className="justify-center py-3 sm:py-2 text-sm"
                                 >
                                     Top 10 Más Jugados
                                 </SecondaryButton>
-                                <Link href={route('admin.championships.entries.create', championship.id)} className="w-full sm:w-auto">
-                                    <PrimaryButton className="w-full sm:w-auto justify-center py-3 sm:py-2 text-sm">
+                                <Link href={route('admin.championships.entries.create', championship.id)} className="w-full sm:w-auto inline-flex">
+                                    <PrimaryButton className="w-full justify-center py-3 sm:py-2 text-sm h-full">
                                         Registrar Cuadro <span className="ml-2 text-lg">+</span>
                                     </PrimaryButton>
                                 </Link>
