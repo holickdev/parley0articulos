@@ -31,6 +31,7 @@ class ChampionshipController extends Controller
             'rounds_count' => 'required|integer|min:1',
             'entry_price' => 'required|numeric|min:0',
             'status' => 'required|in:open,in_progress,finished',
+            'has_articles' => 'required|boolean',
             'coleadores' => 'required|array|min:1',
             'coleadores.*' => 'required|string|max:255'
         ]);
@@ -42,6 +43,7 @@ class ChampionshipController extends Controller
                 'rounds_count' => $validated['rounds_count'],
                 'entry_price' => $validated['entry_price'],
                 'status' => $validated['status'],
+                'has_articles' => $validated['has_articles'],
             ]);
 
             $coleadorIds = collect($validated['coleadores'])
@@ -73,6 +75,7 @@ class ChampionshipController extends Controller
             'rounds_count' => 'required|integer|min:1',
             'entry_price' => 'required|numeric|min:0',
             'status' => 'required|in:open,in_progress,finished',
+            'has_articles' => 'required|boolean',
             'coleadores' => 'required|array|min:1',
             'coleadores.*' => 'required|string|max:255'
         ]);
@@ -86,6 +89,7 @@ class ChampionshipController extends Controller
                 'rounds_count' => $validated['rounds_count'],
                 'entry_price' => $validated['entry_price'],
                 'status' => $validated['status'],
+                'has_articles' => $validated['has_articles'],
             ]);
 
             $coleadorIds = collect($validated['coleadores'])

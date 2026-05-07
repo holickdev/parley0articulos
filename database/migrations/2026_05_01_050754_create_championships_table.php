@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('coleadores_count'); // n_coleadores
             $table->integer('rounds_count')->default(4); // n_rondas
             $table->decimal('entry_price', 10, 2); // precio_cuadro
+            $table->boolean('has_articles')->default(false);
             $table->enum('status', ['open', 'in_progress', 'finished'])->default('open');
             $table->timestamps();
         });

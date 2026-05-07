@@ -38,6 +38,7 @@ interface TopColeador {
 interface Championship {
     id: number;
     name: string;
+    has_articles: boolean;
 }
 
 export default function Index({ championship, entries, topColeadores }: { championship: Championship, entries: Entry[], topColeadores: TopColeador[] }) {
@@ -213,7 +214,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     <option value="ce">CE (Acumulado)</option>
                                     <option value="cn">CN (Acumulado)</option>
                                     <option value="tp">TP (Acumulado)</option>
-                                    <option value="ar">AR (Acumulado)</option>
+                                    {championship.has_articles && <option value="ar">AR (Acumulado)</option>}
                                 </select>
                                 <button
                                     type="button"
@@ -264,7 +265,9 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                         <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">CE</th>
                                         <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">CN</th>
                                         <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">TP</th>
-                                        <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">AR</th>
+                                        {championship.has_articles && (
+                                            <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">AR</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-parley-gold/20 bg-white">
@@ -287,7 +290,9 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                             <td className="px-4 py-4 text-center text-sm font-bold text-green-700">{entry.total_ce}</td>
                                             <td className="px-4 py-4 text-center text-sm font-bold text-red-700">{entry.total_cn}</td>
                                             <td className="px-4 py-4 text-center text-sm font-bold text-blue-700">{entry.total_tp}</td>
-                                            <td className="px-4 py-4 text-center text-sm font-bold text-orange-700">-{entry.total_ar}</td>
+                                            {championship.has_articles && (
+                                                <td className="px-4 py-4 text-center text-sm font-bold text-orange-700">-{entry.total_ar}</td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -368,7 +373,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     <span className="w-6 text-center">CE</span>
                                     <span className="w-6 text-center">CN</span>
                                     <span className="w-6 text-center">TP</span>
-                                    <span className="w-6 text-center">AR</span>
+                                    {championship.has_articles && <span className="w-6 text-center">AR</span>}
                                 </div>
                             </div>
                             <ul className="space-y-2">
@@ -384,7 +389,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                             <span className="w-6 text-center text-green-700">{coleador.net_ce}</span>
                                             <span className="w-6 text-center text-red-700">{coleador.total_cn}</span>
                                             <span className="w-6 text-center text-blue-700">{coleador.total_tp}</span>
-                                            <span className="w-6 text-center text-orange-700">-{coleador.total_ar}</span>
+                                            {championship.has_articles && <span className="w-6 text-center text-orange-700">-{coleador.total_ar}</span>}
                                         </div>
                                     </li>
                                 ))}
@@ -395,7 +400,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     <span className="w-6 text-center text-green-700">{selectedEntry.net_ce}</span>
                                     <span className="w-6 text-center text-red-700">{selectedEntry.total_cn}</span>
                                     <span className="w-6 text-center text-blue-700">{selectedEntry.total_tp}</span>
-                                    <span className="w-6 text-center text-orange-700">-{selectedEntry.total_ar}</span>
+                                    {championship.has_articles && <span className="w-6 text-center text-orange-700">-{selectedEntry.total_ar}</span>}
                                 </div>
                             </div>
                         </div>

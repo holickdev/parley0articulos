@@ -6,6 +6,8 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
+import Checkbox from '@/Components/Checkbox';
+import Toggle from '@/Components/Toggle';
 
 interface Coleador {
     id: number;
@@ -19,6 +21,7 @@ interface Championship {
     rounds_count: number;
     entry_price: string;
     status: 'open' | 'in_progress' | 'finished';
+    has_articles: boolean;
     coleadores: Coleador[];
 }
 
@@ -29,6 +32,7 @@ export default function Edit({ championship }: { championship: Championship }) {
         rounds_count: championship.rounds_count,
         entry_price: championship.entry_price,
         status: championship.status,
+        has_articles: championship.has_articles,
         coleadores: championship.coleadores.map(c => c.name),
     });
 
@@ -129,7 +133,7 @@ export default function Edit({ championship }: { championship: Championship }) {
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="entry_price" value="Precio del Cuadro (Bs.)" />
+                                    <InputLabel htmlFor="entry_price" value="Precio del Cuadro ($)" />
                                     <TextInput
                                         id="entry_price"
                                         type="number"
@@ -138,7 +142,18 @@ export default function Edit({ championship }: { championship: Championship }) {
                                         onChange={(e) => setData('entry_price', e.target.value)}
                                         className="mt-1 block w-full"
                                     />
+                                    <p className="mt-1 text-xs text-parley-brown/60">El precio se define en dólares y se convertirá a bolívares usando la tasa BCV al momento del registro.</p>
                                     <InputError message={errors.entry_price} className="mt-2" />
+                                </div>
+
+                                <div className="mt-6">
+                                    <Toggle
+                                        checked={data.has_articles}
+                                        onChange={(checked) => setData('has_articles', checked)}
+                                        label="Habilitar Artículos / Restas"
+                                        description="Permite ingresar penalizaciones (AR) en las puntuaciones."
+                                    />
+                                    <InputError message={errors.has_articles} className="mt-2" />
                                 </div>
                             </div>
                         </div>

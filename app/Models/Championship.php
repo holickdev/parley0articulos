@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'coleadores_count', 'rounds_count', 'entry_price', 'status'])]
+#[Fillable(['name', 'coleadores_count', 'rounds_count', 'entry_price', 'status', 'has_articles'])]
 class Championship extends Model
 {
     /** @use HasFactory<\Database\Factories\ChampionshipFactory> */
@@ -25,6 +25,7 @@ class Championship extends Model
             'entry_price' => 'decimal:2',
             'coleadores_count' => 'integer',
             'rounds_count' => 'integer',
+            'has_articles' => 'boolean',
         ];
     }
 

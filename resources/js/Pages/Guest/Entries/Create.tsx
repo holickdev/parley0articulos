@@ -1,5 +1,5 @@
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState, useEffect, useRef } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
@@ -27,6 +27,7 @@ interface Props {
 }
 
 export default function Create({ championship }: Props) {
+    const { bcvRate, bcvLastUpdate } = usePage().props as any;
     const [step, setStep] = useState(1);
     const [isValidating, setIsValidating] = useState(false);
     const [validationError, setValidationError] = useState<string | undefined>(undefined);
@@ -51,6 +52,25 @@ export default function Create({ championship }: Props) {
         type: 'error',
     });
 
+    const [copiedField, setCopiedField] = useState<string | null>(null);
+
+    const handleCopy = (text: string, fieldId: string) => {
+        navigator.clipboard.writeText(text);
+        setCopiedField(fieldId);
+        setTimeout(() => setCopiedField(null), 2000);
+    };
+
+    // Scroll to top when step changes
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [step]);
+
+    const hasBcv = bcvRate && parseFloat(bcvRate) > 0;
+
+    const initialAmount = hasBcv 
+        ? (parseFloat(championship.entry_price) * bcvRate).toFixed(2)
+        : championship.entry_price;
+
     const { data, setData, post, processing, errors, setError, clearErrors } = useForm({
         customer_identification: '',
         customer_name: '',
@@ -59,10 +79,19 @@ export default function Create({ championship }: Props) {
         coleadores: [] as number[],
         payment_bank: '',
         payment_reference: '',
-        payment_amount_bs: championship.entry_price,
+        payment_amount_bs: initialAmount,
         payment_date: new Date().toISOString().split('T')[0],
         payment_phone: '',
     });
+
+    // Update payment_amount_bs if bcvRate changes or is loaded late
+    useEffect(() => {
+        if (hasBcv) {
+            setData('payment_amount_bs', (parseFloat(championship.entry_price) * bcvRate).toFixed(2));
+        } else {
+            setData('payment_amount_bs', championship.entry_price);
+        }
+    }, [bcvRate]);
 
     const showAlert = (title: string, message: string, type: 'error' | 'warning' = 'error', action?: () => void) => {
         setAlertConfig({ show: true, title, message, type, action });
@@ -195,7 +224,7 @@ export default function Create({ championship }: Props) {
                         </div>
 
                         {step === 3 && isTimerActive && (
-                            <div className={`flex items-center gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl font-black text-lg sm:text-xl border-2 transition-all duration-300 w-full sm:w-auto justify-center ${
+                            <div className={`max-w-[275px] sm:max-w-none flex items-center gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl font-black text-lg sm:text-xl border-2 transition-all duration-300 w-full sm:w-auto justify-center ${
                                 timeLeft < 60 ? 'bg-red-50 border-red-500 text-red-600 animate-pulse' : 'bg-parley-cream border-parley-gold text-parley-brown shadow-md'
                             }`}>
                                 <div className={`${timeLeft < 60 ? 'text-red-600' : 'text-parley-gold'}`}>
@@ -210,7 +239,7 @@ export default function Create({ championship }: Props) {
                     </div>
 
                     {/* Stepper Header */}
-                    <div className="mb-8 overflow-x-hidden">
+                    <div className="mb-8 mt-4 py-2 overflow-x-hidden">
                         <div className="flex items-center justify-between relative px-2 sm:px-4">
                             <div className="absolute left-0 top-1/2 w-full h-1 bg-parley-gold/10 -z-10 rounded-full"></div>
                             <div className="absolute left-0 top-1/2 h-1 bg-parley-red transition-all duration-500 -z-10 rounded-full" style={{ width: `${((step - 1) / 2) * 100}%` }}></div>
@@ -241,7 +270,16 @@ export default function Create({ championship }: Props) {
                                         <div><InputLabel value="Nombre Completo" /><TextInput value={data.customer_name} onChange={e => setData('customer_name', e.target.value)} className="w-full mt-1" required /><InputError message={errors.customer_name} /></div>
                                         <div className="md:col-span-2"><InputLabel value="Teléfono" /><TextInput value={data.customer_phone} onChange={e => setData('customer_phone', e.target.value)} className="w-full mt-1" required /><InputError message={errors.customer_phone} /></div>
                                     </div>
-                                    <div className="flex justify-end pt-4"><PrimaryButton type="button" onClick={() => setStep(2)} className="w-full sm:w-auto">Siguiente: Datos del Cuadro</PrimaryButton></div>
+                                    <div className="flex justify-end pt-4">
+                                        <PrimaryButton
+                                            type="button"
+                                            onClick={() => setStep(2)}
+                                            className="w-full sm:w-auto justify-center"
+                                            disabled={!data.customer_identification || !data.customer_name || !data.customer_phone}
+                                        >
+                                            Siguiente
+                                        </PrimaryButton>
+                                    </div>
                                 </div>
                             )}
 
@@ -279,25 +317,104 @@ export default function Create({ championship }: Props) {
                                     </div>
 
                                     <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-6 border-t border-parley-gold/10">
-                                        <SecondaryButton type="button" onClick={() => setStep(1)} className="w-full sm:w-auto">Anterior</SecondaryButton>
-                                        <PrimaryButton type="button" onClick={validateCombination} disabled={data.coleadores.length !== championship.coleadores_count || !data.entry_name || isValidating} className="w-full sm:w-auto">{isValidating ? 'Validando...' : 'Siguiente'}</PrimaryButton>
+                                        <SecondaryButton type="button" onClick={() => setStep(1)} className="w-full sm:w-auto justify-center">Anterior</SecondaryButton>
+                                        <PrimaryButton type="button" onClick={validateCombination} disabled={data.coleadores.length !== championship.coleadores_count || !data.entry_name || isValidating} className="w-full sm:w-auto justify-center">{isValidating ? 'Validando...' : 'Siguiente'}</PrimaryButton>
                                     </div>
                                 </div>
                             )}
 
+                            {/* Step 3: Payment */}
                             {step === 3 && (
                                 <div className="space-y-6">
+                                    <div className="bg-white rounded-2xl border-2 border-parley-gold/10 shadow-sm overflow-hidden mb-6">
+                                        <div className="bg-parley-cream/30 px-4 py-2.5 border-b border-parley-gold/10 flex justify-between items-center">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-parley-red animate-pulse"></div>
+                                                <span className="text-[10px] font-black text-parley-brown/60 uppercase tracking-widest">Pago Móvil Oficial</span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                {hasBcv && (
+                                                    <span className="text-[10px] font-bold text-parley-gold">
+                                                        Tasa BCV: {bcvRate} ({bcvLastUpdate})
+                                                    </span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const currencyLabel = hasBcv ? 'Bs.' : '$';
+                                                        const text = `Pago Móvil:\nBanco: Banesco\nCédula: V-12.345.678\nTeléfono: 0412-123.45.67\nMonto: ${currencyLabel} ${data.payment_amount_bs}`;
+                                                        handleCopy(text, 'all');
+                                                    }}
+                                                    className="text-[10px] font-black uppercase transition-colors"
+                                                >
+                                                    {copiedField === 'all' ? (
+                                                        <span className="text-green-600 animate-pulse font-bold">¡Copiado!</span>
+                                                    ) : (
+                                                        <span className="text-parley-red hover:text-parley-brown border-b-2 border-parley-red/20">Copiar Todo</span>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 divide-x divide-y divide-parley-gold/10">
+                                            {[
+                                                { id: 'banco', label: 'Banco', value: 'Banesco' },
+                                                { id: 'cedula', label: 'Cédula', value: 'V-12.345.678' },
+                                                { id: 'telefono', label: 'Teléfono', value: '0412-123.45.67' },
+                                                { id: 'monto', label: 'Monto a Pagar', value: `${hasBcv ? 'Bs.' : '$'} ${data.payment_amount_bs}`, subtitle: hasBcv ? `Precio: $${championship.entry_price}` : undefined },
+                                            ].map((item, i) => (
+                                                <div key={i} className="p-3 sm:p-4 hover:bg-parley-cream/10 transition-colors group">
+                                                    <span className="text-[9px] font-bold text-parley-gold uppercase mb-1 block leading-none">{item.label}</span>
+                                                    <div className="flex justify-between items-center gap-2">
+                                                        <div className="flex flex-col">
+                                                            {copiedField === item.id ? (
+                                                                <span className="text-[10px] font-black text-green-600 uppercase">¡Copiado!</span>
+                                                            ) : (
+                                                                <span className="font-black text-parley-brown text-base sm:text-xl italic leading-none break-all">{item.value}</span>
+                                                            )}
+                                                            {item.subtitle && (
+                                                                <span className="text-[10px] text-parley-gold font-medium mt-1">{item.subtitle}</span>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleCopy(item.value.replace('Bs. ', '').replace('$ ', ''), item.id)}
+                                                            className={`p-1 rounded-lg transition-all active:scale-90 flex-shrink-0 ${copiedField === item.id ? 'text-green-600 bg-green-50' : 'text-parley-gold/40 hover:text-parley-red group-hover:text-parley-red'}`}
+                                                        >
+                                                            {copiedField === item.id ? (
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                                                            ) : (
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" /></svg>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     <h3 className="text-lg font-bold text-parley-brown border-b pb-2">Información del Pago</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div><InputLabel value="Banco" /><TextInput value={data.payment_bank} onChange={e => setData('payment_bank', e.target.value)} className="w-full mt-1" required /><InputError message={errors.payment_bank} /></div>
                                         <div><InputLabel value="Referencia" /><TextInput value={data.payment_reference} onChange={e => setData('payment_reference', e.target.value)} className="w-full mt-1" required /><InputError message={errors.payment_reference} /></div>
-                                        <div><InputLabel value="Monto (Bs.)" /><TextInput value={data.payment_amount_bs} onChange={e => setData('payment_amount_bs', e.target.value)} className="w-full mt-1" required /><InputError message={errors.payment_amount_bs} /></div>
+                                        <div>
+                                            <InputLabel value={hasBcv ? "Monto (Bs.)" : "Monto ($)"} />
+                                            <TextInput 
+                                                value={data.payment_amount_bs} 
+                                                onChange={e => setData('payment_amount_bs', e.target.value)} 
+                                                className="w-full mt-1 bg-gray-100 cursor-not-allowed" 
+                                                readOnly 
+                                                required 
+                                            />
+                                            {hasBcv && <p className="mt-1 text-[10px] text-parley-gold font-medium">Calculado automáticamente según la tasa BCV.</p>}
+                                            <InputError message={errors.payment_amount_bs} />
+                                        </div>
                                         <div><InputLabel value="Fecha de Pago" /><TextInput type="date" value={data.payment_date} onChange={e => setData('payment_date', e.target.value)} className="w-full mt-1" required /><InputError message={errors.payment_date} /></div>
                                         <div className="md:col-span-2"><InputLabel value="Teléfono asociado al pago" /><TextInput value={data.payment_phone} onChange={e => setData('payment_phone', e.target.value)} className="w-full mt-1" required /><InputError message={errors.payment_phone} /></div>
                                     </div>
                                     <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-6 border-t border-parley-gold/10">
-                                        <SecondaryButton type="button" onClick={() => setStep(2)} className="w-full sm:w-auto">Anterior</SecondaryButton>
-                                        <PrimaryButton disabled={processing} className="w-full sm:w-auto">Finalizar Registro</PrimaryButton>
+                                        <SecondaryButton type="button" onClick={() => setStep(2)} className="w-full sm:w-auto justify-center">Anterior</SecondaryButton>
+                                        <PrimaryButton disabled={processing} className="w-full sm:w-auto justify-center">Finalizar Registro</PrimaryButton>
                                     </div>
                                 </div>
                             )}

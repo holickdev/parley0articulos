@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useState, useMemo } from 'react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
@@ -19,6 +19,9 @@ interface Payment {
 }
 
 export default function Index({ payments }: { payments: Payment[] }) {
+    const { bcvRate } = usePage().props as any;
+    const hasBcv = bcvRate && parseFloat(bcvRate) > 0;
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
@@ -39,9 +42,10 @@ export default function Index({ payments }: { payments: Payment[] }) {
     });
 
     // DataTable Logic
-    const formatBs = (value: string | number) => {
+    const formatAmount = (value: string | number) => {
         const amount = typeof value === 'string' ? parseFloat(value) : value;
-        return `Bs. ${amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const currency = hasBcv ? 'Bs.' : '$';
+        return `${currency} ${amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const formatDate = (dateString: string) => {
@@ -260,7 +264,7 @@ export default function Index({ payments }: { payments: Payment[] }) {
                                             <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-parley-brown">{payment.reference}</td>
                                             <td className="whitespace-nowrap px-4 py-4 text-sm text-parley-brown/80">{payment.identification}</td>
                                             <td className="whitespace-nowrap px-4 py-4 text-sm text-parley-brown/80">{payment.bank}</td>
-                                            <td className="whitespace-nowrap px-4 py-4 text-sm font-bold text-parley-brown">{formatBs(payment.amount_bs)}</td>
+                                            <td className="whitespace-nowrap px-4 py-4 text-sm font-bold text-parley-brown">{formatAmount(payment.amount_bs)}</td>
                                             <td className="whitespace-nowrap px-4 py-4 text-sm text-parley-brown/60">{formatDate(payment.payment_date)}</td>
                                             <td className="whitespace-nowrap px-4 py-4 text-right text-sm font-medium space-x-3">
                                                 <button onClick={() => openEditModal(payment)} className="text-parley-red hover:underline font-bold">Editar</button>
@@ -329,7 +333,7 @@ export default function Index({ payments }: { payments: Payment[] }) {
                             <InputError message={errors.reference} className="mt-2" />
                         </div>
                         <div>
-                            <InputLabel htmlFor="amount_bs" value="Monto (Bs.)" />
+                            <InputLabel htmlFor="amount_bs" value={hasBcv ? "Monto (Bs.)" : "Monto ($)"} />
                             <TextInput id="amount_bs" type="number" step="0.01" value={data.amount_bs} onChange={(e) => setData('amount_bs', e.target.value)} className="mt-1 block w-full" />
                             <InputError message={errors.amount_bs} className="mt-2" />
                         </div>

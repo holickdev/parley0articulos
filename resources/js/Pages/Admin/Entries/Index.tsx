@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import Modal from '@/Components/Modal';
 import Dropdown from '@/Components/Dropdown';
@@ -69,6 +69,9 @@ const statusLabels = {
 };
 
 export default function Index({ championship, entries, topColeadores }: { championship: Championship, entries: Entry[], topColeadores: TopColeador[] }) {
+    const { bcvRate } = usePage().props as any;
+    const hasBcv = bcvRate && parseFloat(bcvRate) > 0;
+
     const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
     const [modalType, setModalType] = useState<'coleadores' | 'payment' | 'customer' | 'topColeadores' | null>(null);
 
@@ -80,9 +83,10 @@ export default function Index({ championship, entries, topColeadores }: { champi
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
     // DataTable Logic
-    const formatBs = (value: string | number) => {
+    const formatAmount = (value: string | number) => {
         const amount = typeof value === 'string' ? parseFloat(value) : value;
-        return `Bs. ${amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const currency = hasBcv ? 'Bs.' : '$';
+        return `${currency} ${amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const formatDate = (dateString: string) => {
@@ -395,7 +399,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                                     #{entry.payment.reference}
                                                 </button>
                                             </td>
-                                            <td className="px-4 py-4 text-sm font-bold text-parley-brown">{formatBs(entry.payment.amount_bs)}</td>
+                                            <td className="px-4 py-4 text-sm font-bold text-parley-brown">{formatAmount(entry.payment.amount_bs)}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-green-700">{entry.net_ce}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-red-700">{entry.total_cn}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-blue-700">{entry.total_tp}</td>
@@ -634,7 +638,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[10px] text-parley-brown/40 uppercase font-bold tracking-wider">Monto Total</p>
-                                        <p className="text-xl font-bold text-parley-brown">{formatBs(selectedEntry.payment.amount_bs)}</p>
+                                        <p className="text-xl font-bold text-parley-brown">{formatAmount(selectedEntry.payment.amount_bs)}</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-6 px-1">

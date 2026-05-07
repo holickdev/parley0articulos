@@ -9,6 +9,7 @@ interface Championship {
     id: number;
     name: string;
     rounds_count: number;
+    has_articles: boolean;
 }
 
 interface Round {
@@ -214,7 +215,7 @@ export default function Index({
                                     <option value="ce">Total CE</option>
                                     <option value="cn">Total CN</option>
                                     <option value="tp">Total TP</option>
-                                    <option value="ar">Total AR</option>
+                                    {championship.has_articles && <option value="ar">Total AR</option>}
                                 </select>
                                 <button
                                     type="button"
@@ -311,9 +312,9 @@ export default function Index({
                                 <tr className="bg-parley-cream">
                                     <th className="border-b border-r border-parley-gold/70 p-2 text-left sm:sticky left-0 bg-parley-cream z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
                                     {filteredRounds.map(round => (
-                                        <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-[#F2E8D9] min-w-[160px]" colSpan={4}>Ronda {round.number}</th>
+                                        <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-[#F2E8D9] min-w-[160px]" colSpan={championship.has_articles ? 4 : 3}>Ronda {round.number}</th>
                                     ))}
-                                    <th className="border-b border-l border-parley-brown p-2 text-center bg-parley-brown text-white sm:sticky right-0 z-30 font-black" colSpan={4} style={{ minWidth: colWidth * 4 }}>TOTALES</th>
+                                    <th className="border-b border-l border-parley-brown p-2 text-center bg-parley-brown text-white sm:sticky right-0 z-30 font-black" colSpan={championship.has_articles ? 4 : 3} style={{ minWidth: colWidth * (championship.has_articles ? 4 : 3) }}>TOTALES</th>
                                 </tr>
                                 <tr className="bg-parley-cream text-[10px] uppercase font-bold text-parley-brown">
                                     {filteredRounds.map(round => (
@@ -321,13 +322,17 @@ export default function Index({
                                             <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-green-50 w-10">CE</th>
                                             <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-red-50 w-10">CN</th>
                                             <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-blue-50 w-10">TP</th>
-                                            <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-yellow-50 w-10">AR</th>
+                                            {championship.has_articles && (
+                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-yellow-50 w-10">AR</th>
+                                            )}
                                         </Fragment>
                                     ))}
-                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-green-200 text-green-900 sm:sticky z-30 font-black" style={{ right: colWidth * 3, width: colWidth }}>CE</th>
-                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-red-200 text-red-900 sm:sticky z-30 font-black" style={{ right: colWidth * 2, width: colWidth }}>CN</th>
-                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-blue-200 text-blue-900 sm:sticky z-30 font-black" style={{ right: colWidth * 1, width: colWidth }}>TP</th>
-                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-yellow-200 text-yellow-900 sm:sticky right-0 z-30 font-black" style={{ right: 0, width: colWidth }}>AR</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-green-200 text-green-900 sm:sticky z-30 font-black" style={{ right: colWidth * (championship.has_articles ? 3 : 2), width: colWidth }}>CE</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-red-200 text-red-900 sm:sticky z-30 font-black" style={{ right: colWidth * (championship.has_articles ? 2 : 1), width: colWidth }}>CN</th>
+                                    <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-blue-200 text-blue-900 sm:sticky z-30 font-black" style={{ right: colWidth * (championship.has_articles ? 1 : 0), width: colWidth }}>TP</th>
+                                    {championship.has_articles && (
+                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-yellow-200 text-yellow-900 sm:sticky right-0 z-30 font-black" style={{ right: 0, width: colWidth }}>AR</th>
+                                    )}
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -353,16 +358,20 @@ export default function Index({
                                                         <td className="border-b border-r border-parley-gold/50 px-1 py-3 text-center text-lg font-bold text-parley-brown">{s?.effective_coleadas || 0}</td>
                                                         <td className="border-b border-r border-parley-gold/50 px-1 py-3 text-center text-lg font-bold text-parley-brown">{s?.null_coleadas || 0}</td>
                                                         <td className="border-b border-r border-parley-gold/50 px-1 py-3 text-center text-lg font-bold text-parley-brown">{s?.gate_bulls || 0}</td>
-                                                        <td className={`border-b border-r border-parley-gold/50 px-1 py-3 text-center text-lg font-black cursor-pointer hover:underline ${arTotal > 0 ? 'text-red-600' : 'text-parley-brown/40'}`} onClick={() => arTotal > 0 && openArticlesModal(round.id, coleador.id)}>
-                                                            {arTotal > 0 ? `-${arTotal}` : '0'}
-                                                        </td>
+                                                        {championship.has_articles && (
+                                                            <td className={`border-b border-r border-parley-gold/50 px-1 py-3 text-center text-lg font-black cursor-pointer hover:underline ${arTotal > 0 ? 'text-red-600' : 'text-parley-brown/40'}`} onClick={() => arTotal > 0 && openArticlesModal(round.id, coleador.id)}>
+                                                                {arTotal > 0 ? `-${arTotal}` : '0'}
+                                                            </td>
+                                                        )}
                                                     </Fragment>
                                                 );
                                             })}
-                                            <td className={`border-b border-l border-parley-gold/50 px-1 py-3 text-center font-black text-green-900 text-lg sm:sticky z-20 bg-green-100 group-hover:bg-green-200 transition-colors`} style={{ right: colWidth * 3 }}>{currentCE - currentAR}</td>
-                                            <td className={`border-b border-l border-parley-gold/50 px-1 py-3 text-center font-black text-red-900 text-lg sm:sticky z-20 bg-red-100 group-hover:bg-red-200 transition-colors`} style={{ right: colWidth * 2 }}>{currentCN}</td>
-                                            <td className={`border-b border-l border-parley-gold/50 px-1 py-3 text-center font-black text-blue-900 text-lg sm:sticky z-20 bg-blue-100 group-hover:bg-blue-200 transition-colors`} style={{ right: colWidth }}>{currentTP}</td>
-                                            <td className={`border-b border-l border-parley-gold/50 px-1 py-3 text-center font-black text-red-700 text-lg sm:sticky right-0 z-20 bg-yellow-100 group-hover:bg-yellow-200 transition-colors`} style={{ right: 0 }}>{currentAR > 0 ? `-${currentAR}` : '0'}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 px-1 py-3 text-center font-black text-green-900 text-lg sm:sticky z-20 bg-green-100 group-hover:bg-green-200 transition-colors`} style={{ right: colWidth * (championship.has_articles ? 3 : 2) }}>{currentCE - currentAR}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 px-1 py-3 text-center font-black text-red-900 text-lg sm:sticky z-20 bg-red-100 group-hover:bg-red-200 transition-colors`} style={{ right: colWidth * (championship.has_articles ? 2 : 1) }}>{currentCN}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 px-1 py-3 text-center font-black text-blue-900 text-lg sm:sticky z-20 bg-blue-100 group-hover:bg-blue-200 transition-colors`} style={{ right: colWidth * (championship.has_articles ? 1 : 0) }}>{currentTP}</td>
+                                            {championship.has_articles && (
+                                                <td className={`border-b border-l border-parley-gold/50 px-1 py-3 text-center font-black text-red-700 text-lg sm:sticky right-0 z-20 bg-yellow-100 group-hover:bg-yellow-200 transition-colors`} style={{ right: 0 }}>{currentAR > 0 ? `-${currentAR}` : '0'}</td>
+                                            )}
                                         </tr>
                                     );
                                 })}

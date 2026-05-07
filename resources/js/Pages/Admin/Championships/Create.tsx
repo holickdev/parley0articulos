@@ -6,6 +6,8 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
+import Checkbox from '@/Components/Checkbox';
+import Toggle from '@/Components/Toggle';
 
 export default function Create() {
     const { data, setData, post, processing, errors } = useForm({
@@ -14,6 +16,7 @@ export default function Create() {
         rounds_count: 4,
         entry_price: '',
         status: 'open',
+        has_articles: false,
         coleadores: [] as string[],
     });
 
@@ -117,7 +120,7 @@ export default function Create() {
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="entry_price" value="Precio del Cuadro (Bs.)" />
+                                    <InputLabel htmlFor="entry_price" value="Precio del Cuadro ($)" />
                                     <TextInput
                                         id="entry_price"
                                         type="number"
@@ -127,7 +130,18 @@ export default function Create() {
                                         className="mt-1 block w-full"
                                         placeholder="0.00"
                                     />
+                                    <p className="mt-1 text-xs text-parley-brown/60">El precio se define en dólares y se convertirá a bolívares usando la tasa BCV al momento del registro.</p>
                                     <InputError message={errors.entry_price} className="mt-2" />
+                                </div>
+
+                                <div className="mt-6">
+                                    <Toggle
+                                        checked={data.has_articles}
+                                        onChange={(checked) => setData('has_articles', checked)}
+                                        label="Habilitar Artículos / Restas"
+                                        description="Permite ingresar penalizaciones (AR) en las puntuaciones."
+                                    />
+                                    <InputError message={errors.has_articles} className="mt-2" />
                                 </div>
                             </div>
                         </div>
