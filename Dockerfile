@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # ETAPA 2: Producción (FrankenPHP)
-FROM dunglas/frankenphp:1-php8.3 AS runner
+FROM dunglas/frankenphp:1-php8.4 AS runner
 
 ENV SERVER_NAME=":80"
 
