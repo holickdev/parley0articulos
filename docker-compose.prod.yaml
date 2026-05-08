@@ -7,9 +7,21 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"        # Obligatorio para HTTPS
+      - "443:443/udp"    # Recomendado para soporte HTTP/3
     env_file: .env
+    environment:
+      # Sobrescribe o asegura el dominio aquí. Cambia midominio.com por tu dominio real.
+      # El "https://" es el detonante que le indica a FrankenPHP que debe generar el SSL.
+      SERVER_NAME: https://parley0articulos.com
     depends_on:
       - db
+    volumes:
+      # CRÍTICO: Persistencia de Caddy.
+      # Si omites esto, solicitarás un certificado nuevo cada vez que
+      # reinicies el contenedor y Let's Encrypt bloqueará tu dominio.
+      - caddy_data:/data
+      - caddy_config:/config
     logging:
       driver: "json-file"
       options:
@@ -30,3 +42,6 @@ services:
 
 volumes:
   db_data:
+  # Declara los nuevos volúmenes a nivel global
+  caddy_data:
+  caddy_config:

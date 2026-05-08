@@ -9,9 +9,6 @@ RUN npm run build
 # ETAPA 2: Producción (FrankenPHP)
 FROM dunglas/frankenphp:1-php8.4 AS runner
 
-ENV SERVER_NAME=":80"
-
-# Extensiones estrictas (Sin Redis, sin Exif)
 RUN install-php-extensions \
     pdo_mysql \
     gd \
@@ -53,6 +50,8 @@ RUN composer dump-autoload --optimize && \
 RUN chown -R root:root /app/storage /app/bootstrap/cache && \
     chmod -R 775 /app/storage /app/bootstrap/cache
 
-EXPOSE 80
+# CORRECCIÓN: Exposición de los puertos necesarios para SSL y HTTP/3
+EXPOSE 80 443 443/udp
 
-CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=80", "--admin-port=2019"]
+# CORRECCIÓN: Cambio del puerto de Octane al 443 para coincidir con la emisión de SSL
+CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=443", "--admin-port=2019"]
