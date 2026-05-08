@@ -14,6 +14,7 @@ services:
       # Sobrescribe o asegura el dominio aquí. Cambia midominio.com por tu dominio real.
       # El "https://" es el detonante que le indica a FrankenPHP que debe generar el SSL.
       SERVER_NAME: https://parley0articulos.com
+      OCTANE: 1
     depends_on:
       - db
     volumes:
