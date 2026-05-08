@@ -387,9 +387,9 @@ export default function Index({
                 <div className="p-6">
                     <h2 className="text-lg font-bold text-parley-brown mb-4 border-b border-parley-gold/20 pb-2">Detalle de Artículos / Restas</h2>
                     <div className="space-y-3">
-                        {activeArticles.length > 0 ? activeArticles.map(([name, points], i) => (
+                        {activeArticles.length > 0 ? activeArticles.map(([name, points]: [string, any], i) => (
                             <div key={i} className="flex justify-between items-center p-3 bg-parley-cream rounded-lg border border-parley-gold/10">
-                                <span className="font-bold text-parley-brown">{name}</span>
+                                <span className="font-bold text-parley-brown">{name as string}</span>
                                 <span className="font-black text-red-600">-{points}</span>
                             </div>
                         )) : (
