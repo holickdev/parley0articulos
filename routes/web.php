@@ -15,9 +15,7 @@ Route::post('/championships/{championship}/entries', [PublicController::class, '
 Route::post('/championships/{championship}/check-combination', [PublicController::class, 'checkCombination'])->name('public.entries.check');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/admin', function () {
-        return Inertia::render('Dashboard');
-    })->name('admin');
+    Route::get('/admin', \App\Http\Controllers\Admin\DashboardController::class)->name('admin');
 });
 
 Route::middleware('auth')->group(function () {

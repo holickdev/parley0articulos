@@ -109,4 +109,10 @@ class ChampionshipController extends Controller
 
         return redirect()->route('admin.championships.index')->with('success', 'Campeonato actualizado.');
     }
+
+    public function destroy(Championship $championship)
+    {
+        $championship->delete();
+        return redirect()->route('admin.championships.index')->with('success', 'Campeonato eliminado.');
+    }
 }
