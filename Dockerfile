@@ -55,4 +55,4 @@ RUN chown -R root:root /app/storage /app/bootstrap/cache && \
 
 EXPOSE 80
 
-CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=80"]
+CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=80", "--admin-port=2019"]
