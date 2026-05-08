@@ -54,4 +54,4 @@ RUN chown -R root:root /app/storage /app/bootstrap/cache && \
 EXPOSE 80 443 443/udp
 
 # CORRECCIÓN: Cambio del puerto de Octane al 443 para coincidir con la emisión de SSL
-CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=80", "--admin-port=2019"]
+CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=parley0articulos.com", "--port=443", "--admin-port=2019"]
