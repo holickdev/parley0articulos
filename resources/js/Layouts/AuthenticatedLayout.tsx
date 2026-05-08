@@ -78,18 +78,6 @@ export default function Authenticated({
                                 >
                                     Coleadores
                                 </NavLink>
-                                <NavLink
-                                    href={route('admin.customers.index')}
-                                    active={route().current('admin.customers.*')}
-                                >
-                                    Clientes
-                                </NavLink>
-                                <NavLink
-                                    href={route('admin.payments.index')}
-                                    active={route().current('admin.payments.*')}
-                                >
-                                    Pagos
-                                </NavLink>
                             </div>
                         </div>
 
@@ -208,18 +196,6 @@ export default function Authenticated({
                             active={route().current('admin.coleadores.*')}
                         >
                             Coleadores
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('admin.customers.index')}
-                            active={route().current('admin.customers.*')}
-                        >
-                            Clientes
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('admin.payments.index')}
-                            active={route().current('admin.payments.*')}
-                        >
-                            Pagos
                         </ResponsiveNavLink>
                     </div>
 

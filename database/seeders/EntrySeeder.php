@@ -4,9 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Championship;
 use App\Models\Coleador;
-use App\Models\Customer;
 use App\Models\Entry;
-use App\Models\Payment;
 use Illuminate\Database\Seeder;
 
 class EntrySeeder extends Seeder
@@ -27,25 +25,6 @@ class EntrySeeder extends Seeder
             }
 
             for ($i = 1; $i <= $count; $i++) {
-                $cedula = 'V-' . (20000000 + $championship->id * 100 + $i);
-
-                $customer = Customer::firstOrCreate(
-                    ['identification' => $cedula],
-                    [
-                        'name' => 'Cliente ' . $championship->id . '-' . $i,
-                        'phone' => '0414' . rand(1000000, 9999999),
-                    ]
-                );
-
-                $payment = Payment::create([
-                    'identification' => $cedula,
-                    'bank' => 'Banesco',
-                    'phone' => $customer->phone,
-                    'reference' => 'REF-' . $championship->id . '-' . $i . '-' . rand(1000, 9999),
-                    'amount_bs' => $championship->entry_price,
-                    'payment_date' => now(),
-                ]);
-
                 // Select exactly the required number of coleadores from those associated with this championship
                 $selectedIds = $participants->random($championship->coleadores_count)->pluck('id')->toArray();
                 sort($selectedIds);
@@ -53,9 +32,10 @@ class EntrySeeder extends Seeder
 
                 $entry = Entry::create([
                     'championship_id' => $championship->id,
-                    'customer_id' => $customer->id,
-                    'payment_id' => $payment->id,
-                    'name' => 'Cuadro ' . $i . ' - ' . $customer->name,
+                    'name' => 'Cuadro ' . $i,
+                    'phone' => '0414' . rand(1000000, 9999999),
+                    'payment_type' => ['pago movil', 'zelle', 'usdt'][rand(0, 2)],
+                    'reference' => 'REF-' . $championship->id . '-' . $i . '-' . rand(1000, 9999),
                     'status' => $championship->status === 'finished' ? 'approved' : (rand(0, 10) > 2 ? 'approved' : 'pending'),
                     'combination_hash' => $hash,
                 ]);

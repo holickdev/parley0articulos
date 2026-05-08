@@ -30,9 +30,9 @@ export default function Index({ championships }: { championships: Championship[]
 
     return (
         <GuestLayout>
-            <Head title="Resultados Públicos" />
+            <Head title="Campeonatos" />
 
-            <div className="py-12 bg-gray-50">
+            <div className="py-12 bg-parley-cream min-h-[70vh]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-10 text-center">
                         <h1 className="text-3xl sm:text-4xl font-extrabold text-parley-red mb-2 italic">
@@ -73,14 +73,8 @@ export default function Index({ championships }: { championships: Championship[]
 
                                 <div className="grid grid-cols-1 gap-4">
                                     <Link
-                                        href={route('public.scores', championship.id)}
-                                        className="w-full inline-flex justify-center items-center px-4 py-3 bg-parley-red border border-transparent rounded-xl font-bold text-xs text-white uppercase tracking-widest hover:bg-parley-brown transition-all duration-200 shadow-md"
-                                    >
-                                        Ver Puntuaciones
-                                    </Link>
-                                    <Link
                                         href={route('public.entries', championship.id)}
-                                        className="w-full inline-flex justify-center items-center px-4 py-3 bg-white border-2 border-parley-red/20 rounded-xl font-bold text-xs text-parley-red uppercase tracking-widest hover:bg-parley-cream transition-all duration-200"
+                                        className="w-full inline-flex justify-center items-center px-4 py-3 bg-parley-red border border-transparent rounded-xl font-bold text-xs text-white uppercase tracking-widest hover:bg-parley-brown transition-all duration-200 shadow-md"
                                     >
                                         Ver Cuadros
                                     </Link>

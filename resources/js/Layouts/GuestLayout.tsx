@@ -31,7 +31,7 @@ export default function Guest({ children }: PropsWithChildren) {
             />
 
             {!isAuthPage && (
-                <nav className="bg-white shadow-sm border-b border-parley-gold/10">
+                <nav className="bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)] border-b border-parley-gold/10 relative z-10">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="flex h-20 justify-between items-center">
                             <Link href="/" className="flex items-center gap-3">

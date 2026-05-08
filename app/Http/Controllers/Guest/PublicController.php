@@ -6,8 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Championship;
 use App\Models\Entry;
 use App\Models\Round;
-use App\Models\Customer;
-use App\Models\Payment;
 use App\Models\Coleador;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,12 +18,13 @@ class PublicController extends Controller
     public function index()
     {
         return Inertia::render('Guest/Championships/Index', [
-            'championships' => Championship::withCount('coleadores')->get()
+            'championships' => Championship::all()
         ]);
     }
 
     public function entries(Championship $championship)
     {
+        $championship->load('coleadores');
         $entries = Entry::where('championship_id', $championship->id)
             ->with(['coleadores.scores' => function($query) use ($championship) {
                 $query->whereHas('round', function($q) use ($championship) {
@@ -93,37 +92,6 @@ class PublicController extends Controller
         ]);
     }
 
-    public function scores(Championship $championship)
-    {
-        $rounds = Round::where('championship_id', $championship->id)
-            ->with(['scores.coleador'])
-            ->orderBy('number')
-            ->get();
-
-        $coleadores = $championship->coleadores()->orderBy('name')->get();
-
-        $scoresMap = [];
-        foreach ($rounds as $round) {
-            foreach ($round->scores as $score) {
-                $scoresMap[$round->id][$score->coleador_id] = $score;
-            }
-        }
-
-        return Inertia::render('Guest/Scores/Index', [
-            'championship' => $championship,
-            'rounds' => $rounds,
-            'coleadores' => $coleadores,
-            'scoresMap' => $scoresMap
-        ]);
-    }
-
-    public function createEntry(Championship $championship)
-    {
-        return Inertia::render('Guest/Entries/Create', [
-            'championship' => $championship->load('coleadores'),
-        ]);
-    }
-
     public function checkCombination(Request $request, Championship $championship)
     {
         $request->validate([
@@ -156,55 +124,5 @@ class PublicController extends Controller
         }
 
         return response()->json(['message' => 'Combinación disponible', 'hash' => $hash]);
-    }
-
-    public function storeEntry(Request $request, Championship $championship)
-    {
-        $validated = $request->validate([
-            'customer_identification' => 'required|string',
-            'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'required|string|max:255',
-            'payment_bank' => 'required|string|max:255',
-            'payment_reference' => 'required|string|max:255',
-            'payment_amount_bs' => 'required|numeric|min:0',
-            'payment_date' => 'required|date',
-            'payment_phone' => 'required|string|max:255',
-            'entry_name' => 'required|string|max:255',
-            'coleadores' => 'required|array|size:' . $championship->coleadores_count,
-            'coleadores.*' => 'exists:coleadores,id'
-        ]);
-
-        sort($validated['coleadores']);
-        $hash = implode('-', $validated['coleadores']);
-
-        return DB::transaction(function () use ($validated, $championship, $hash) {
-            $customer = Customer::firstOrCreate(
-                ['identification' => $validated['customer_identification']],
-                ['name' => $validated['customer_name'], 'phone' => $validated['customer_phone']]
-            );
-
-            $payment = Payment::create([
-                'identification' => $validated['customer_identification'],
-                'bank' => $validated['payment_bank'],
-                'phone' => $validated['payment_phone'],
-                'reference' => $validated['payment_reference'],
-                'amount_bs' => $validated['payment_amount_bs'],
-                'payment_date' => $validated['payment_date'],
-            ]);
-
-            $entry = Entry::create([
-                'championship_id' => $championship->id,
-                'customer_id' => $customer->id,
-                'payment_id' => $payment->id,
-                'name' => $validated['entry_name'],
-                'status' => 'pending',
-                'combination_hash' => $hash,
-            ]);
-
-            $entry->coleadores()->sync($validated['coleadores']);
-
-            return redirect()->route('public.entries', $championship->id)
-                ->with('success', 'Tu cuadro ha sido registrado con éxito y está pendiente de aprobación.');
-        });
     }
 }

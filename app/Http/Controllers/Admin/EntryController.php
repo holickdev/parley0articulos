@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Entry;
 use App\Models\Championship;
-use App\Models\Customer;
-use App\Models\Payment;
 use App\Models\Coleador;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -81,7 +79,7 @@ class EntryController extends Controller
     public function index(Championship $championship)
     {
         $entries = Entry::where('championship_id', $championship->id)
-            ->with(['customer', 'payment', 'coleadores.scores' => function($query) use ($championship) {
+            ->with(['coleadores.scores' => function($query) use ($championship) {
                 $query->whereHas('round', function($q) use ($championship) {
                     $q->where('championship_id', $championship->id);
                 });
@@ -103,7 +101,6 @@ class EntryController extends Controller
                         return $carry + array_sum($articles);
                     }, 0);
 
-                    // Attach totals to coleador for individual view
                     $coleador->total_ce = $coleadorCE;
                     $coleador->total_cn = $coleadorCN;
                     $coleador->total_tp = $coleadorTP;
@@ -166,7 +163,6 @@ class EntryController extends Controller
         sort($coleadores);
         $hash = implode('-', $coleadores);
 
-        // 1. Verificación inicial contra la base de datos
         $exists = Entry::where('championship_id', $championship->id)
             ->where('combination_hash', $hash)
             ->exists();
@@ -179,35 +175,28 @@ class EntryController extends Controller
 
         $lockKey = "lock_entry_{$championship->id}_{$hash}";
         $sessionId = session()->getId();
-        $sessionMemoryKey = "locked_hash_{$championship->id}"; // Llave para recordar qué bloqueó este usuario
+        $sessionMemoryKey = "locked_hash_{$championship->id}";
 
-        // NUEVO: Liberación proactiva de cuadros abandonados
         $previousHash = session()->get($sessionMemoryKey);
         if ($previousHash && $previousHash !== $hash) {
             $oldLockKey = "lock_entry_{$championship->id}_{$previousHash}";
-            // Verificamos que el bloqueo viejo aún le pertenezca antes de borrarlo
             if (Cache::get($oldLockKey) === $sessionId) {
                 Cache::forget($oldLockKey);
             }
         }
 
-        // 2. Control de concurrencia atómico
         $lockAcquired = Cache::add($lockKey, $sessionId, now()->addMinutes(10));
 
         if (!$lockAcquired) {
             $existingLockOwner = Cache::get($lockKey);
-
             if ($existingLockOwner !== $sessionId) {
                 throw ValidationException::withMessages([
                     'coleadores' => 'Esta combinación está siendo procesada por otro usuario en este momento. Intenta de nuevo en unos minutos.'
                 ]);
             }
-
-            // Es el mismo usuario renovando su propio tiempo
             Cache::put($lockKey, $sessionId, now()->addMinutes(10));
         }
 
-        // Si tuvo éxito, anotamos en su sesión personal cuál es el hash que tiene bloqueado
         session()->put($sessionMemoryKey, $hash);
 
         return response()->json(['message' => 'Combinación disponible', 'hash' => $hash]);
@@ -216,20 +205,10 @@ class EntryController extends Controller
     public function store(Request $request, Championship $championship)
     {
         $validated = $request->validate([
-            // Customer data
-            'customer_identification' => 'required|string',
-            'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'required|string|max:255',
-
-            // Payment data
-            'payment_bank' => 'required|string|max:255',
-            'payment_reference' => 'required|string|max:255',
-            'payment_amount_bs' => 'required|numeric|min:0',
-            'payment_date' => 'required|date',
-            'payment_phone' => 'required|string|max:255',
-
-            // Entry data
-            'entry_name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:255',
+            'payment_type' => 'nullable|in:pago movil,zelle,usdt',
+            'reference' => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
             'coleadores' => 'required|array|size:' . $championship->coleadores_count,
             'coleadores.*' => 'exists:coleadores,id'
         ]);
@@ -238,7 +217,6 @@ class EntryController extends Controller
         $hash = implode('-', $validated['coleadores']);
         $lockKey = "lock_entry_{$championship->id}_{$hash}";
 
-        // NUEVO: Verificación de respeto de bloqueo (Cierra el vector de ataque directo)
         $lockOwner = Cache::get($lockKey);
         if ($lockOwner && $lockOwner !== session()->getId()) {
             throw ValidationException::withMessages([
@@ -248,7 +226,6 @@ class EntryController extends Controller
 
         try {
             return DB::transaction(function () use ($validated, $championship, $hash, $lockKey) {
-                // Double check existence inside transaction
                 $exists = Entry::where('championship_id', $championship->id)
                     ->where('combination_hash', $hash)
                     ->lockForUpdate()
@@ -260,47 +237,27 @@ class EntryController extends Controller
                     ]);
                 }
 
-                // 1. Find or create Customer
-                $customer = Customer::firstOrCreate(
-                    ['identification' => $validated['customer_identification']],
-                    [
-                        'name' => $validated['customer_name'],
-                        'phone' => $validated['customer_phone']
-                    ]
-                );
-
-                // 2. Create Payment
-                $payment = Payment::create([
-                    'identification' => $validated['customer_identification'],
-                    'bank' => $validated['payment_bank'],
-                    'phone' => $validated['payment_phone'],
-                    'reference' => $validated['payment_reference'],
-                    'amount_bs' => $validated['payment_amount_bs'],
-                    'payment_date' => $validated['payment_date'],
-                ]);
-
-                // 3. Create Entry
                 $entry = Entry::create([
                     'championship_id' => $championship->id,
-                    'customer_id' => $customer->id,
-                    'payment_id' => $payment->id,
-                    'name' => $validated['entry_name'],
+                    'name' => $validated['name'],
+                    'phone' => $validated['phone'],
+                    'payment_type' => $validated['payment_type'],
+                    'reference' => $validated['reference'],
                     'status' => 'pending',
                     'combination_hash' => $hash,
                 ]);
 
                 $entry->coleadores()->sync($validated['coleadores']);
 
-                // Release lock
                 if (Cache::get($lockKey) === session()->getId()) {
                     Cache::forget($lockKey);
                 }
 
                 return redirect()->route('admin.championships.entries.index', $championship->id)
-                    ->with('success', 'Cuadro, Cliente y Pago registrados con éxito.');
+                    ->with('success', 'Cuadro registrado con éxito.');
             });
         } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() == 23000) { // Unique constraint violation
+            if ($e->getCode() == 23000) {
                 throw ValidationException::withMessages([
                     'coleadores' => 'Lo sentimos, esta combinación de coleadores ya ha sido registrada.'
                 ]);
@@ -313,27 +270,27 @@ class EntryController extends Controller
     {
         return Inertia::render('Admin/Entries/Edit', [
             'championship' => $championship,
-            'entry' => $entry->load(['customer', 'payment', 'coleadores']),
+            'entry' => $entry->load(['coleadores']),
             'coleadores' => $championship->coleadores()->orderBy('name')->get()
         ]);
     }
 
     public function update(Request $request, Championship $championship, Entry $entry)
     {
-        // If it's a status-only update (usually from the Index page)
         if ($request->has('status') && !$request->has('name')) {
             $validated = $request->validate([
                 'status' => 'required|in:pending,approved,rejected',
             ]);
-
             $entry->update($validated);
-
             return redirect()->route('admin.championships.entries.index', $championship->id)
                 ->with('success', 'Estado del cuadro actualizado con éxito.');
         }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:255',
+            'payment_type' => 'nullable|in:pago movil,zelle,usdt',
+            'reference' => 'nullable|string|max:255',
             'status' => 'required|in:pending,approved,rejected',
             'coleadores' => 'required|array|size:' . $championship->coleadores_count,
             'coleadores.*' => 'exists:coleadores,id'
@@ -343,7 +300,6 @@ class EntryController extends Controller
         $hash = implode('-', $validated['coleadores']);
         $lockKey = "lock_entry_{$championship->id}_{$hash}";
 
-        // Verificación de respeto de bloqueo si la combinación cambió
         if ($hash !== $entry->combination_hash) {
             $lockOwner = Cache::get($lockKey);
             if ($lockOwner && $lockOwner !== session()->getId()) {
@@ -355,7 +311,6 @@ class EntryController extends Controller
 
         try {
             return DB::transaction(function () use ($validated, $championship, $entry, $hash, $lockKey) {
-                // Verificación de existencia contra otros registros dentro de la transacción
                 $exists = Entry::where('championship_id', $championship->id)
                     ->where('combination_hash', $hash)
                     ->where('id', '!=', $entry->id)
@@ -370,13 +325,15 @@ class EntryController extends Controller
 
                 $entry->update([
                     'name' => $validated['name'],
+                    'phone' => $validated['phone'],
+                    'payment_type' => $validated['payment_type'],
+                    'reference' => $validated['reference'],
                     'status' => $validated['status'],
                     'combination_hash' => $hash
                 ]);
 
                 $entry->coleadores()->sync($validated['coleadores']);
 
-                // Liberar el bloqueo si le pertenece a esta sesión
                 if (Cache::get($lockKey) === session()->getId()) {
                     Cache::forget($lockKey);
                 }
@@ -385,7 +342,7 @@ class EntryController extends Controller
                     ->with('success', 'Cuadro actualizado con éxito.');
             });
         } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() == 23000) { // Unique constraint violation
+            if ($e->getCode() == 23000) {
                 throw ValidationException::withMessages([
                     'coleadores' => 'Lo sentimos, esta combinación de coleadores ya ha sido registrada.'
                 ]);

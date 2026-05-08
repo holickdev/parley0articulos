@@ -14,7 +14,7 @@ class ChampionshipController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Championships/Index', [
-            'championships' => Championship::withCount('coleadores')->get()
+            'championships' => Championship::all()
         ]);
     }
 

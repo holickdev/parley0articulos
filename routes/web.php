@@ -9,9 +9,6 @@ use App\Http\Controllers\Guest\PublicController;
 
 Route::get('/', [PublicController::class, 'index'])->name('home');
 Route::get('/championships/{championship}/entries', [PublicController::class, 'entries'])->name('public.entries');
-Route::get('/championships/{championship}/scores', [PublicController::class, 'scores'])->name('public.scores');
-Route::get('/championships/{championship}/entries/create', [PublicController::class, 'createEntry'])->name('public.entries.create');
-Route::post('/championships/{championship}/entries', [PublicController::class, 'storeEntry'])->name('public.entries.store');
 Route::post('/championships/{championship}/check-combination', [PublicController::class, 'checkCombination'])->name('public.entries.check');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -35,8 +32,6 @@ Route::middleware('auth')->group(function () {
         Route::get('championships/{championship}/entries-pdf', [\App\Http\Controllers\Admin\EntryController::class, 'downloadPdf'])->name('championships.entries.pdf');
         Route::post('championships/{championship}/entries/check-combination', [\App\Http\Controllers\Admin\EntryController::class, 'checkCombination'])->name('championships.entries.check');
 
-        Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
-        Route::resource('payments', \App\Http\Controllers\Admin\PaymentController::class);
         Route::resource('rounds', \App\Http\Controllers\Admin\RoundController::class);
 
         // Individual score management can still exist but index and create are now scoped
