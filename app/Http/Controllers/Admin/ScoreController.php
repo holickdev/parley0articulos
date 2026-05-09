@@ -50,42 +50,73 @@ class ScoreController extends Controller
             'scores.*.*.effective_coleadas' => 'nullable|integer|min:0',
             'scores.*.*.null_coleadas' => 'nullable|integer|min:0',
             'scores.*.*.gate_bulls' => 'nullable|integer|min:0',
-            'scores.*.*.articles' => 'nullable', // Removed strict array validation
+            'scores.*.*.articles' => 'nullable',
         ]);
 
-        DB::transaction(function () use ($validated) {
-            foreach ($validated['scores'] as $roundId => $coleadores) {
-                foreach ($coleadores as $coleadorId => $data) {
-                    $articles = $data['articles'] ?? [];
-                    
-                    // Asegurar que articles sea un array (puede venir como entero si se guardó mal anteriormente)
-                    if (!is_array($articles)) {
-                        $articles = !empty($articles) ? [$articles] : [];
-                    }
+        $toUpsert = [];
+        $toDelete = [];
+        $now = now();
 
-                    // Asegurar que todos los valores de artículos sean positivos
-                    if (!empty($articles)) {
-                        $articles = array_map(fn($val) => max(0, (int)$val), $articles);
-                    }
-
-                    $hasArticles = !empty($articles);
-                    $hasData = ($data['effective_coleadas'] ?? 0) > 0 || 
-                              ($data['null_coleadas'] ?? 0) > 0 || 
-                              ($data['gate_bulls'] ?? 0) > 0 || 
-                              $hasArticles;
-
-                    if ($hasData) {
-                        Score::updateOrCreate(
-                            ['round_id' => $roundId, 'coleador_id' => $coleadorId],
-                            [
-                                'effective_coleadas' => $data['effective_coleadas'] ?? 0,
-                                'null_coleadas' => $data['null_coleadas'] ?? 0,
-                                'gate_bulls' => $data['gate_bulls'] ?? 0,
-                                'articles' => $articles,
-                            ]
-                        );
-                    }
+        foreach ($validated['scores'] as $roundId => $coleadores) {
+            foreach ($coleadores as $coleadorId => $data) {
+                $articles = $data['articles'] ?? [];
+                
+                if (!is_array($articles)) {
+                    $articles = !empty($articles) ? [$articles] : [];
                 }
+
+                if (!empty($articles)) {
+                    $articles = array_map(fn($val) => max(0, (int)$val), $articles);
+                }
+
+                $ce = (int)($data['effective_coleadas'] ?? 0);
+                $cn = (int)($data['null_coleadas'] ?? 0);
+                $tp = (int)($data['gate_bulls'] ?? 0);
+
+                $hasArticles = !empty($articles);
+                $hasData = $ce > 0 || $cn > 0 || $tp > 0 || $hasArticles;
+
+                if ($hasData) {
+                    $toUpsert[] = [
+                        'round_id' => $roundId,
+                        'coleador_id' => $coleadorId,
+                        'effective_coleadas' => $ce,
+                        'null_coleadas' => $cn,
+                        'gate_bulls' => $tp,
+                        'articles' => json_encode($articles),
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                } else {
+                    $toDelete[] = [
+                        'round_id' => $roundId,
+                        'coleador_id' => $coleadorId,
+                    ];
+                }
+            }
+        }
+
+        DB::transaction(function () use ($toUpsert, $toDelete) {
+            if (!empty($toUpsert)) {
+                // MySQL 8.4 handles JSON in upsert correctly. 
+                // We use json_encode because upsert bypasses Eloquent casts for the values array.
+                Score::upsert($toUpsert, ['round_id', 'coleador_id'], [
+                    'effective_coleadas', 
+                    'null_coleadas', 
+                    'gate_bulls', 
+                    'articles', 
+                    'updated_at'
+                ]);
+            }
+
+            if (!empty($toDelete)) {
+                foreach ($toDelete as $item) {
+                    Score::where('round_id', $item['round_id'])
+                        ->where('coleador_id', $item['coleador_id'])
+                        ->delete();
+                }
+                // Optimization: If there are MANY to delete, we could use a more complex query, 
+                // but usually only a few scores are wiped to zero at once.
             }
         });
 
