@@ -15,19 +15,12 @@ const statusLabels = {
     finished: { label: 'Finalizado', class: 'bg-parley-cream text-parley-brown' },
 };
 
-const formatBs = (value: string | number) => {
-    const amount = typeof value === 'string' ? parseFloat(value) : value;
-    return `Bs. ${amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
 const formatUsd = (value: string | number) => {
     const amount = typeof value === 'string' ? parseFloat(value) : value;
     return `$ ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 export default function Index({ championships }: { championships: Championship[] }) {
-    const { bcvRate } = usePage().props as any;
-
     return (
         <GuestLayout>
             <Head title="Campeonatos" />
@@ -58,11 +51,6 @@ export default function Index({ championships }: { championships: Championship[]
                                         <span className="text-[11px] uppercase tracking-wider font-bold text-parley-brown/40">Precio de Inscripción</span>
                                         <div className="flex flex-col items-end">
                                             <span className="text-sm font-bold text-parley-brown">{formatUsd(championship.entry_price)}</span>
-                                            {bcvRate && parseFloat(bcvRate) > 0 && (
-                                                <span className="text-[10px] text-parley-gold font-medium">
-                                                    ≈ {formatBs(parseFloat(championship.entry_price) * bcvRate)}
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-end border-b border-parley-gold/10 pb-2">

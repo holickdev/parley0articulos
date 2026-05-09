@@ -130,7 +130,6 @@ export default function Create() {
                                         className="mt-1 block w-full"
                                         placeholder="0.00"
                                     />
-                                    <p className="mt-1 text-xs text-parley-brown/60">El precio se define en dólares y se convertirá a bolívares usando la tasa BCV al momento del registro.</p>
                                     <InputError message={errors.entry_price} className="mt-2" />
                                 </div>
 

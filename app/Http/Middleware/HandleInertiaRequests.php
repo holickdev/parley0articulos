@@ -38,8 +38,6 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
-            'bcvRate' => cache('bcv_usd_rate', null),
-            'bcvLastUpdate' => cache('bcv_last_update', 'No disponible'),
         ];
     }
 }
