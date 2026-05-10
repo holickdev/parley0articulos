@@ -31,19 +31,24 @@ export default function Guest({ children }: PropsWithChildren) {
             />
 
             {!isAuthPage && (
-                <nav className="bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)] border-b border-parley-gold/10 relative z-10">
+                <nav className="bg-parley-blue shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)] border-b border-white/10 relative z-10">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="flex h-20 justify-between items-center">
                             <Link href="/" className="flex items-center gap-3">
-                                <ApplicationLogo className="h-12 w-12 text-parley-red" />
-                                <span className="font-black text-parley-brown tracking-tighter text-xl italic uppercase">Parley 0 Artículos</span>
+                                <ApplicationLogo className="h-12 w-12 text-white" />
+                                <span className="sr-only">Parley 0 Artículos</span>
+                                <img 
+                                    src="/parley0articulos-title.svg" 
+                                    alt="Parley 0 Artículos" 
+                                    className="h-8 sm:h-10 w-auto"
+                                />
                             </Link>
                             
                             <div className="flex gap-4">
                                 {auth.user ? (
-                                    <Link href={route('admin')} className="text-sm font-bold text-parley-red hover:underline">Ir al Panel</Link>
+                                    <Link href={route('admin')} className="text-sm font-bold text-white hover:underline">Ir al Panel</Link>
                                 ) : (
-                                    <Link href={route('login')} className="text-sm font-bold text-parley-brown/60 hover:text-parley-red transition-colors">Iniciar Sesión</Link>
+                                    <Link href={route('login')} className="text-sm font-bold text-white/80 hover:text-white transition-colors">Iniciar Sesión</Link>
                                 )}
                             </div>
                         </div>
@@ -70,8 +75,8 @@ export default function Guest({ children }: PropsWithChildren) {
             {!isAuthPage && (
                 <footer className="bg-parley-brown py-12 text-center">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <ApplicationLogo className="h-12 w-12 mx-auto text-parley-gold/20 mb-4" />
-                        <p className="text-parley-gold/40 text-sm font-medium">© {new Date().getFullYear()} PARLEY 0 ARTÍCULOS - Sistema de Gestión de Toros Coleados</p>
+                        <ApplicationLogo className="h-12 w-12 mx-auto text-white/20 mb-4" />
+                        <p className="text-white/60 text-sm font-medium">© {new Date().getFullYear()} PARLEY 0 ARTÍCULOS - Sistema de Gestión de Toros Coleados</p>
                     </div>
                 </footer>
             )}

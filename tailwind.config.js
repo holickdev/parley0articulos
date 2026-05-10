@@ -16,10 +16,15 @@ export default {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
             colors: {
-                'parley-red': '#8B1E1E',     // El color del círculo exterior
-                'parley-gold': '#B38B4D',    // El color de las espigas y herraduras
-                'parley-cream': '#FDF8F1',   // El color del fondo de las letras
-                'parley-brown': '#2A1B15',   // Para el texto y sombras
+                'parley-blue': '#0047FF',    // Electric Blue (Primary)
+                'parley-cyan': '#00EAFF',    // High contrast accent
+                'parley-light': '#F0F7FF',   // Light background instead of cream
+                'parley-dark': '#001A40',    // Deep dark blue for text/contrast
+                // Mapping old names to new palette to maintain compatibility while shifting the theme
+                'parley-red': '#0047FF',     // Map red to electric blue
+                'parley-gold': '#00EAFF',    // Map gold to cyan
+                'parley-cream': '#F0F7FF',   // Map cream to light blue
+                'parley-brown': '#001A40',   // Map brown to dark blue
             }
 
 

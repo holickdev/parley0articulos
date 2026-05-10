@@ -463,7 +463,7 @@ export default function Index({
                                 <tr className="bg-parley-cream">
                                     <th className="border-b border-r border-parley-gold/70 p-2 text-left sm:sticky left-0 bg-parley-cream z-30 min-w-[180px]" rowSpan={2}>Coleador</th>
                                     {filteredRounds.map(round => (
-                                        <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-[#F2E8D9] min-w-[160px]" colSpan={championship.has_articles ? 4 : 3}>Ronda {round.number}</th>
+                                        <th key={round.id} className="border-b border-r border-parley-gold/70 p-2 text-center bg-parley-blue text-white min-w-[160px]" colSpan={championship.has_articles ? 4 : 3}>Ronda {round.number}</th>
                                     ))}
                                     <th className="border-b border-l border-parley-brown p-2 text-center bg-parley-brown text-white sm:sticky right-0 z-30" colSpan={championship.has_articles ? 4 : 3} style={{ minWidth: colWidth * (championship.has_articles ? 4 : 3) }}>TOTALES</th>
                                 </tr>
@@ -474,7 +474,7 @@ export default function Index({
                                             <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-red-100 w-10">CN</th>
                                             <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-blue-100 w-10">TP</th>
                                             {championship.has_articles && (
-                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-yellow-100 w-10">AR</th>
+                                                <th className="border-b border-r border-parley-gold/50 p-1 text-center bg-parley-cyan/20 text-parley-dark w-10">AR</th>
                                             )}
                                         </Fragment>
                                     ))}
@@ -482,7 +482,7 @@ export default function Index({
                                     <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-red-200 text-red-900 sm:sticky z-30" style={{ right: colWidth * (championship.has_articles ? 2 : 1), width: colWidth }}>CN</th>
                                     <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-blue-200 text-blue-900 sm:sticky z-30" style={{ right: colWidth * (championship.has_articles ? 1 : 0), width: colWidth }}>TP</th>
                                     {championship.has_articles && (
-                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-yellow-200 text-yellow-900 sm:sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
+                                        <th className="border-b border-l border-parley-gold/70 p-1 text-center bg-parley-cyan/40 text-yellow-900 sm:sticky right-0 z-30" style={{ right: 0, width: colWidth }}>AR</th>
                                     )}
                                 </tr>
                                 </thead>
@@ -495,11 +495,11 @@ export default function Index({
                                     const ceBg = index % 2 === 0 ? 'bg-green-50' : 'bg-green-100';
                                     const cnBg = index % 2 === 0 ? 'bg-red-50' : 'bg-red-100';
                                     const tpBg = index % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100';
-                                    const arBg = index % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100';
+                                    const arBg = index % 2 === 0 ? 'bg-parley-cyan/10' : 'bg-parley-cyan/20 text-parley-dark';
 
                                     return (
-                                        <tr key={coleador.id} className={`${rowBgColor} hover:bg-[#F2E8D9] transition-colors group`}>
-                                            <td className={`border-b border-r border-parley-gold/50 p-2 font-bold sm:sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-[#F2E8D9]`}>
+                                        <tr key={coleador.id} className={`${rowBgColor} transition-colors group hover:bg-parley-cyan/30`}>
+                                            <td className={`border-b border-r border-parley-gold/50 p-2 font-bold sm:sticky left-0 ${rowBgColor} z-20 text-sm group-hover:bg-parley-cyan/30`}>
                                                 {coleador.name}
                                             </td>
                                             {filteredRounds.map(round => {
@@ -512,21 +512,21 @@ export default function Index({
                                                 currentAR += arTotal;
                                                 return (
                                                     <Fragment key={`cell-${coleador.id}-${round.id}`}>
-                                                        <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-green-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-lg font-bold focus:ring-2 focus:ring-parley-red bg-transparent"
+                                                        <td className="border-b border-r border-parley-gold/50 p-0 transition-colors">
+                                                            <input type="text" className="w-full border-none p-2 text-center text-lg font-bold focus:ring-2 focus:ring-parley-red bg-transparent text-green-700"
                                                                    value={s.effective_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'effective_coleadas', e.target.value)} />
                                                         </td>
-                                                        <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-red-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-lg font-bold focus:ring-2 focus:ring-parley-red bg-transparent"
+                                                        <td className="border-b border-r border-parley-gold/50 p-0 transition-colors">
+                                                            <input type="text" className="w-full border-none p-2 text-center text-lg font-bold focus:ring-2 focus:ring-parley-red bg-transparent text-red-700"
                                                                    value={s.null_coleadas} onChange={(e) => handleInputChange(round.id, coleador.id, 'null_coleadas', e.target.value)} />
                                                         </td>
-                                                        <td className="border-b border-r border-parley-gold/50 p-0 hover:bg-blue-200 transition-colors">
-                                                            <input type="text" className="w-full border-none p-2 text-center text-lg font-bold focus:ring-2 focus:ring-parley-red bg-transparent"
+                                                        <td className="border-b border-r border-parley-gold/50 p-0 transition-colors">
+                                                            <input type="text" className="w-full border-none p-2 text-center text-lg font-bold focus:ring-2 focus:ring-parley-red bg-transparent text-blue-700"
                                                                    value={s.gate_bulls} onChange={(e) => handleInputChange(round.id, coleador.id, 'gate_bulls', e.target.value)} />
                                                         </td>
                                                         {championship.has_articles && (
                                                             <td
-                                                                className={`border-b border-r border-parley-gold/50 p-2 text-center text-lg cursor-pointer hover:bg-yellow-200 transition-colors font-black ${arTotal > 0 ? 'text-red-600' : 'text-parley-brown/40'}`}
+                                                                className={`border-b border-r border-parley-gold/50 p-2 text-center text-lg cursor-pointer transition-colors font-black ${arTotal > 0 ? 'text-red-600' : 'text-parley-brown/40'}`}
                                                                 onClick={() => openArticlesModal(round.id, coleador.id)}
                                                             >
                                                                 {arTotal > 0 ? `-${arTotal}` : '0'}
@@ -535,12 +535,12 @@ export default function Index({
                                                     </Fragment>
                                                 );
                                             })}
-                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-green-900 text-lg sm:sticky z-20 ${ceBg} hover:bg-green-200 transition-colors group-hover:bg-green-200`} style={{ right: colWidth * (championship.has_articles ? 3 : 2) }}>{currentCE - currentAR}</td>
-                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-900 text-lg sm:sticky z-20 ${cnBg} hover:bg-red-200 transition-colors group-hover:bg-red-200`} style={{ right: colWidth * (championship.has_articles ? 2 : 1) }}>{currentCN}</td>
-                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-blue-900 text-lg sm:sticky z-20 ${tpBg} hover:bg-blue-200 transition-colors group-hover:bg-blue-200`} style={{ right: colWidth * (championship.has_articles ? 1 : 0) }}>{currentTP}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-green-900 text-lg sm:sticky z-20 ${ceBg} transition-colors group-hover:bg-parley-cyan/30`} style={{ right: colWidth * (championship.has_articles ? 3 : 2) }}>{currentCE - currentAR}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-900 text-lg sm:sticky z-20 ${cnBg} transition-colors group-hover:bg-parley-cyan/30`} style={{ right: colWidth * (championship.has_articles ? 2 : 1) }}>{currentCN}</td>
+                                            <td className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-blue-900 text-lg sm:sticky z-20 ${tpBg} transition-colors group-hover:bg-parley-cyan/30`} style={{ right: colWidth * (championship.has_articles ? 1 : 0) }}>{currentTP}</td>
                                             {championship.has_articles && (
                                                 <td
-                                                    className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-700 text-lg sm:sticky right-0 z-20 ${arBg} hover:bg-yellow-200 cursor-pointer hover:underline transition-colors group-hover:bg-yellow-200`}
+                                                    className={`border-b border-l border-parley-gold/50 p-2 text-center font-black text-red-700 text-lg sm:sticky right-0 z-20 ${arBg} cursor-pointer hover:underline transition-colors group-hover:bg-parley-cyan/30`}
                                                     style={{ right: 0 }}
                                                     onClick={() => openSummaryModal(coleador.id)}
                                                 >

@@ -27,11 +27,14 @@ export default function Index({ championships }: { championships: Championship[]
 
             <div className="py-12 bg-parley-cream min-h-[70vh]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="mb-10 text-center">
-                        <h1 className="text-3xl sm:text-4xl font-extrabold text-parley-red mb-2 italic">
-                            PARLEY 0 ARTÍCULOS
-                        </h1>
-                        <p className="text-parley-brown/60 font-medium">Resultados en tiempo real de los Campeonatos de Coleo</p>
+                    <div className="mb-10 text-center flex flex-col items-center">
+                        <h1 className="sr-only">PARLEY 0 ARTÍCULOS</h1>
+                        <img
+                            src="/parley0articulos-title.svg"
+                            alt="PARLEY 0 ARTÍCULOS"
+                            className="h-20 sm:h-28 md:h-32 w-auto mb-6 drop-shadow-lg"
+                        />
+                        <p className="text-parley-brown/60 font-medium">Resultados en vivo de Eventos y Campeonatos de Coleo</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

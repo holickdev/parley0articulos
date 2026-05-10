@@ -49,13 +49,19 @@ export default function Authenticated({
                 message={errorModal.message}
             />
             
-            <nav className="bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)]">
+            <nav className="bg-parley-blue shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)] border-b border-white/10">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-20 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center mr-6">
-                                <Link href="/admin">
-                                    <ApplicationLogo className="block h-14 w-auto" />
+                                <Link href="/admin" className="flex items-center gap-3">
+                                    <ApplicationLogo className="block h-14 w-auto text-white" />
+                                    <span className="sr-only">Parley 0 Artículos</span>
+                                    <img 
+                                        src="/parley0articulos-title.svg" 
+                                        alt="Parley 0 Artículos" 
+                                        className="h-10 w-auto"
+                                    />
                                 </Link>
                             </div>
 
@@ -88,9 +94,9 @@ export default function Authenticated({
                                         <span className="inline-flex rounded-md">
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center gap-3 rounded-md border border-parley-gold/10 bg-parley-cream/20 px-3 py-1.5 text-sm font-medium leading-4 text-parley-brown transition duration-150 ease-in-out hover:bg-parley-cream/50 hover:text-parley-red focus:outline-none"
+                                                className="inline-flex items-center gap-3 rounded-md border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-medium leading-4 text-white transition duration-150 ease-in-out hover:bg-white/20 focus:outline-none"
                                             >
-                                                <div className="h-8 w-8 rounded-full bg-parley-red text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                                                <div className="h-8 w-8 rounded-full bg-parley-cyan text-parley-dark flex items-center justify-center font-bold text-xs shadow-sm">
                                                     {user.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 {user.name}
@@ -136,7 +142,7 @@ export default function Authenticated({
                                         (previousState) => !previousState,
                                     )
                                 }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-parley-gold transition duration-150 ease-in-out hover:bg-parley-cream hover:text-parley-red focus:bg-parley-cream focus:text-parley-red focus:outline-none"
+                                className="inline-flex items-center justify-center rounded-md p-2 text-white transition duration-150 ease-in-out hover:bg-white/10 focus:bg-white/10 focus:outline-none"
                             >
                                 <svg
                                     className="h-6 w-6"
@@ -199,12 +205,12 @@ export default function Authenticated({
                         </ResponsiveNavLink>
                     </div>
 
-                    <div className="border-t border-parley-gold/20 pb-1 pt-4">
+                    <div className="border-t border-white/10 pb-1 pt-4">
                         <div className="px-4">
-                            <div className="text-base font-medium text-parley-brown">
+                            <div className="text-base font-medium text-white">
                                 {user.name}
                             </div>
-                            <div className="text-sm font-medium text-parley-brown/70">
+                            <div className="text-sm font-medium text-white/70">
                                 {user.email}
                             </div>
                         </div>

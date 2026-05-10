@@ -15,14 +15,14 @@ import {
 } from 'recharts';
 
 const COLORS = {
-    approved: ['#4ade80', '#22c55e'],
+    approved: ['#00EAFF', '#0047FF'], // Cyan to Blue
     pending: ['#fbbf24', '#f59e0b'],
     rejected: ['#f87171', '#ef4444'],
-    championships: ['#6366f1', '#ec4899', '#06b6d4', '#f59e0b'],
+    championships: ['#0047FF', '#00EAFF', '#00B2FF', '#001A40'],
     top: [
-        { stop1: '#fcd34d', stop2: '#fbbf24' }, // Gold
-        { stop1: '#e2e8f0', stop2: '#94a3b8' }, // Silver
-        { stop1: '#d97706', stop2: '#b45309' }, // Bronze
+        { stop1: '#00EAFF', stop2: '#0047FF' }, // High contrast gradient
+        { stop1: '#E2E8F0', stop2: '#94A3B8' }, 
+        { stop1: '#00B2FF', stop2: '#0047FF' },
     ],
 };
 
@@ -146,10 +146,10 @@ export default function Dashboard({ entriesData, championshipsData, topColeadore
                                                 dataKey="name" 
                                                 axisLine={false} 
                                                 tickLine={false} 
-                                                tick={{ fill: '#2A1B15', fontSize: 11, fontWeight: 700 }}
+                                                tick={{ fill: '#001A40', fontSize: 11, fontWeight: 700 }}
                                                 dy={10}
                                             />
-                                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#2A1B1588', fontSize: 10 }} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#001A4088', fontSize: 10 }} />
                                             <Tooltip 
                                                 cursor={{ fill: '#f3f4f6' }}
                                                 contentStyle={{ borderRadius: '12px', border: 'none', background: '#fff', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} 

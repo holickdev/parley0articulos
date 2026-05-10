@@ -10,7 +10,7 @@
         body {
             font-family: 'Helvetica', sans-serif;
             font-size: 8px;
-            color: #2A1B15; /* parley-brown */
+            color: #001A40; /* parley-brown */
             margin: 0;
             padding: 0;
             background-color: #fff;
@@ -19,7 +19,7 @@
             position: relative;
             text-align: center;
             margin-bottom: 15px;
-            border-bottom: 3px solid #8B1E1E; /* parley-red */
+            border-bottom: 3px solid #0047FF; /* parley-red */
             padding-bottom: 10px;
             height: 60px;
         }
@@ -35,20 +35,20 @@
         }
         .header h1 {
             margin: 0;
-            color: #8B1E1E; /* parley-red */
+            color: #0047FF; /* parley-red */
             font-size: 16px;
             text-transform: uppercase;
             letter-spacing: 2px;
             font-weight: 900;
         }
         .header .brand {
-            color: #B38B4D; /* parley-gold */
+            color: #00EAFF; /* parley-gold */
             font-size: 10px;
             font-weight: bold;
             margin-top: 2px;
         }
         .header .championship-name {
-            color: #2A1B15;
+            color: #001A40;
             font-size: 12px;
             font-weight: bold;
             display: block;
@@ -60,17 +60,17 @@
             margin-top: 5px;
         }
         th {
-            background-color: #2A1B15; /* parley-brown */
-            color: #FDF8F1; /* parley-cream */
+            background-color: #001A40; /* parley-brown */
+            color: #F0F7FF; /* parley-cream */
             padding: 6px 3px;
             text-align: center;
             text-transform: uppercase;
             font-size: 7px;
-            border: 1px solid #B38B4D;
+            border: 1px solid #00EAFF;
         }
         td {
             padding: 5px 3px;
-            border: 1px solid #B38B4D44;
+            border: 1px solid #00EAFF44;
         }
         .text-center {
             text-align: center;
@@ -94,8 +94,8 @@
         .row-ar { color: #b91c1c; font-weight: bold; }
 
         .total-header {
-            background-color: #2A1B15;
-            color: #FDF8F1;
+            background-color: #001A40;
+            color: #F0F7FF;
         }
 
         .coleador-col {
@@ -110,24 +110,24 @@
             height: 20px;
             text-align: center;
             font-size: 7px;
-            color: #B38B4D;
-            border-top: 1px solid #B38B4D33;
+            color: #00EAFF;
+            border-top: 1px solid #00EAFF33;
             padding-top: 5px;
         }
         .rank-cell {
             width: 20px;
             text-align: center;
             font-weight: bold;
-            background-color: #FDF8F1;
-            color: #8B1E1E;
+            background-color: #F0F7FF;
+            color: #0047FF;
         }
         .entry-name {
             font-weight: bold;
-            color: #2A1B15;
+            color: #001A40;
             width: 100px;
         }
         .stripe {
-            background-color: #FDF8F1;
+            background-color: #F0F7FF;
         }
     </style>
 </head>
