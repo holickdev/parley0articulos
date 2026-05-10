@@ -35,17 +35,11 @@ class EntryController extends Controller
 
     private function getReportData(Championship $championship)
     {
-        // Reutilizamos la consulta base del index para el reporte, pero obteniendo todo (sin paginar)
         $entries = $this->buildEntriesQuery($championship, null, 'net_ce', 'desc')->get();
-
-        // Calculamos el rank manualmente para el reporte completo
-        $entries->each(function ($entry, $index) {
-            $entry->rank = $index + 1;
-        });
 
         return [
             'championship' => $championship,
-            'entries' => $entries,
+            'entries' => $entries, // Rank está presente en cada objeto
             'date' => now()->format('d/m/Y H:i'),
             'orientation' => $championship->coleadores_count > 4 ? 'landscape' : 'portrait'
         ];
@@ -69,19 +63,12 @@ class EntryController extends Controller
 
         $query = $this->buildEntriesQuery($championship, $search, $sortColumn, $sortDirection);
 
-        // Paginación real a nivel de SQL
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
-
-        // Calcular rank para la página actual
-        $paginatedItems = $paginator->getCollection()->map(function ($entry, $index) use ($page, $perPage) {
-            $entry->rank = (($page - 1) * $perPage) + $index + 1;
-            return $entry;
-        });
 
         return Inertia::render('Admin/Entries/Index', [
             'championship' => $championship->load('coleadores:id,name'),
             'entries' => [
-                'data' => $paginatedItems,
+                'data' => $paginator->items(), // Rank ya viene calculado por MySQL
                 'total' => $paginator->total(),
                 'per_page' => $paginator->perPage(),
                 'current_page' => $paginator->currentPage(),
@@ -90,13 +77,12 @@ class EntryController extends Controller
             'filters' => $request->only(['search', 'sortBy', 'sortDirection', 'perPage'])
         ]);
     }
-
     /**
      * Construye la consulta SQL completa integrando estadísticas con JoinSub
      */
     private function buildEntriesQuery(Championship $championship, ?string $search, string $sortColumn, string $sortDirection)
     {
-        // 1. Subconsulta: Totales de Artículos por Score para evitar duplicidad en el Join principal
+        // 1. Subconsulta: Totales de Artículos por Score
         $articleTotals = DB::table('articles')
             ->select('score_id', DB::raw('SUM(points) as total_points'))
             ->groupBy('score_id');
@@ -115,34 +101,44 @@ class EntryController extends Controller
             )
             ->groupBy('scores.coleador_id');
 
-        // 3. Subconsulta: Estadísticas por Cuadro (Entry)
-        $entryStats = DB::table('entry_coleador')
-            ->joinSub($coleadorStats, 'cs', function ($join) {
-                $join->on('entry_coleador.coleador_id', '=', 'cs.coleador_id');
-            })
+        // 3. Subconsulta: Estadísticas por Cuadro (Entry) con RANK global incluido
+        // Usamos 'entries' como tabla principal aquí para asegurar que todos entren en el cálculo del rango.
+        $entryStats = DB::table('entries')
+            ->where('entries.championship_id', $championship->id)
+            ->leftJoin('entry_coleador', 'entries.id', '=', 'entry_coleador.entry_id')
+            ->leftJoinSub($coleadorStats, 'cs', 'entry_coleador.coleador_id', '=', 'cs.coleador_id')
             ->select(
-                'entry_coleador.entry_id',
+                'entries.id as entry_id',
                 DB::raw('COALESCE(SUM(cs.ce), 0) as total_ce'),
                 DB::raw('COALESCE(SUM(cs.cn), 0) as total_cn'),
                 DB::raw('COALESCE(SUM(cs.tp), 0) as total_tp'),
                 DB::raw('COALESCE(SUM(cs.ar), 0) as total_ar'),
-                DB::raw('(COALESCE(SUM(cs.ce), 0) - COALESCE(SUM(cs.ar), 0)) as net_ce')
+                DB::raw('(COALESCE(SUM(cs.ce), 0) - COALESCE(SUM(cs.ar), 0)) as net_ce'),
+                // Generación de posición absoluta por base de datos
+                DB::raw('RANK() OVER (
+                ORDER BY
+                (COALESCE(SUM(cs.ce), 0) - COALESCE(SUM(cs.ar), 0)) DESC,
+                COALESCE(SUM(cs.ce), 0) DESC,
+                COALESCE(SUM(cs.cn), 0) ASC,
+                entries.name ASC
+            ) as global_rank')
             )
-            ->groupBy('entry_coleador.entry_id');
+            ->groupBy('entries.id', 'entries.name');
 
         // 4. Consulta Principal
         $query = Entry::query()
             ->where('entries.championship_id', $championship->id)
-            ->leftJoinSub($entryStats, 'es', function ($join) {
+            ->joinSub($entryStats, 'es', function ($join) {
                 $join->on('entries.id', '=', 'es.entry_id');
             })
             ->select(
                 'entries.*',
-                DB::raw('COALESCE(es.total_ce, 0) as total_ce'),
-                DB::raw('COALESCE(es.total_cn, 0) as total_cn'),
-                DB::raw('COALESCE(es.total_tp, 0) as total_tp'),
-                DB::raw('COALESCE(es.total_ar, 0) as total_ar'),
-                DB::raw('COALESCE(es.net_ce, 0) as net_ce')
+                'es.total_ce',
+                'es.total_cn',
+                'es.total_tp',
+                'es.total_ar',
+                'es.net_ce',
+                'es.global_rank as rank' // Exponemos la posición global
             )
             ->with(['coleadores' => function ($q) use ($coleadorStats) {
                 $q->leftJoinSub($coleadorStats, 'cs', function($join) {
@@ -268,7 +264,7 @@ class EntryController extends Controller
 
         try {
             return DB::transaction(function () use ($validated, $championship, $hash, $lockKey) {
-                // 1. Bloqueamos el registro del Campeonato. 
+                // 1. Bloqueamos el registro del Campeonato.
                 // Esto serializa las peticiones concurrentes para este torneo específico y protege el cálculo del 'number'.
                 Championship::where('id', $championship->id)->lockForUpdate()->first();
 
