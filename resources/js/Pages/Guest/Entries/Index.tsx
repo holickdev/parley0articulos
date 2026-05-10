@@ -300,6 +300,7 @@ export default function Index({
                                 <thead className="bg-parley-cream">
                                     <tr>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 w-12">Pos</th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 w-16">#</th>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">
                                             <div className="flex items-center gap-1">Cuadro</div>
                                         </th>
@@ -322,6 +323,7 @@ export default function Index({
                                     {paginatedEntries.map((entry) => (
                                         <tr key={entry.id} className="hover:bg-parley-cream/30 transition-colors">
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown/40">{entry.rank}</td>
+                                            <td className="px-4 py-4 text-sm font-bold text-parley-red">#{entry.number}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown italic">{entry.name}</td>
                                             <td className="px-4 py-4 text-sm text-center">
                                                 <button
@@ -478,7 +480,7 @@ export default function Index({
                         <div>
                             <div className="flex justify-between items-center border-b border-parley-gold/20 pb-2 mb-4 pr-3">
                                 <h3 className="text-lg font-bold text-parley-brown">
-                                    Coleadores en "{selectedEntry.name}"
+                                    Coleadores en "#{selectedEntry.number} - {selectedEntry.name}"
                                 </h3>
                                 <div className="flex gap-4 text-xs font-bold uppercase text-parley-brown/60">
                                     <span className="w-6 text-center">CE</span>
