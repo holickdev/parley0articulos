@@ -55,12 +55,12 @@ export default function Authenticated({
                         <div className="flex">
                             <div className="flex shrink-0 items-center mr-6">
                                 <Link href="/admin" className="flex items-center gap-3">
-                                    <ApplicationLogo className="block h-14 w-auto text-white" />
+                                    <ApplicationLogo className="block h-20 w-auto text-white" />
                                     <span className="sr-only">Parley 0 Artículos</span>
                                     <img 
                                         src="/parley0articulos-title.svg" 
                                         alt="Parley 0 Artículos" 
-                                        className="h-10 w-auto"
+                                        className="h-12 w-auto"
                                     />
                                 </Link>
                             </div>

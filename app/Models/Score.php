@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['round_id', 'coleador_id', 'effective_coleadas', 'null_coleadas', 'gate_bulls', 'articles'])]
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable(['round_id', 'coleador_id', 'effective_coleadas', 'null_coleadas', 'gate_bulls'])]
 class Score extends Model
 {
     /** @use HasFactory<\Database\Factories\ScoreFactory> */
@@ -24,8 +26,15 @@ class Score extends Model
             'effective_coleadas' => 'integer',
             'null_coleadas' => 'integer',
             'gate_bulls' => 'integer',
-            'articles' => 'array',
         ];
+    }
+
+    /**
+     * Relationship with articles.
+     */
+    public function articles(): HasMany
+    {
+        return $this->hasMany(Article::class);
     }
 
     /**

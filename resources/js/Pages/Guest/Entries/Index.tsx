@@ -1,8 +1,8 @@
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import Modal from '@/Components/Modal';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
@@ -40,14 +40,44 @@ interface TopColeador {
 interface Championship {
     id: number;
     name: string;
-    has_articles: boolean;
     coleadores_count: number;
     coleadores: { id: number; name: string }[];
 }
 
-export default function Index({ championship, entries, topColeadores }: { championship: Championship, entries: Entry[], topColeadores: TopColeador[] }) {
+interface EntriesResponse {
+    data: Entry[];
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+}
+
+export default function Index({ 
+    championship, 
+    entries, 
+    filters
+}: { 
+    championship: Championship, 
+    entries: EntriesResponse, 
+    filters: any
+}) {
     const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
     const [modalType, setModalType] = useState<'coleadores' | 'topColeadores' | 'verify' | null>(null);
+    const [topColeadores, setTopColeadores] = useState<TopColeador[]>([]);
+    const [isLoadingTop, setIsLoadingTop] = useState(false);
+
+    const fetchTopColeadores = async () => {
+        setIsLoadingTop(true);
+        try {
+            const response = await axios.get(route('public.championships.top-coleadores', championship.id));
+            setTopColeadores(response.data);
+            setModalType('topColeadores');
+        } catch (error) {
+            console.error("Error fetching top coleadores:", error);
+        } finally {
+            setIsLoadingTop(false);
+        }
+    };
 
     // Verification State
     const [selectedColeadores, setSelectedColeadores] = useState<number[]>([]);
@@ -56,22 +86,39 @@ export default function Index({ championship, entries, topColeadores }: { champi
     const [validationMessage, setValidationMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
     // DataTable States
-    const [search, setSearch] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(100);
+    const [search, setSearch] = useState(filters.search || '');
+    const [itemsPerPage, setItemsPerPage] = useState(filters.perPage || 100);
+    const [sortBy, setSortBy] = useState<'name' | 'ce' | 'cn' | 'tp' | 'ar'>(filters.sortBy || 'ce');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(filters.sortDirection || 'desc');
 
-    const filteredEntries = useMemo(() => {
-        return entries
-            .filter(entry =>
-                entry.name.toLowerCase().includes(search.toLowerCase())
-            );
-    }, [entries, search]);
+    const updateFilters = (newFilters: any) => {
+        router.get(route('public.entries', championship.id), {
+            ...filters,
+            ...newFilters,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['entries']
+        });
+    };
 
-    const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
-    const paginatedEntries = filteredEntries.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const handleSearch = (value: string) => {
+        setSearch(value);
+    };
+
+    const runSearch = () => {
+        updateFilters({ search, page: 1 });
+    };
+
+    const handlePageChange = (page: number) => {
+        updateFilters({ page });
+    };
+
+    const handlePerPageChange = (value: number) => {
+        setItemsPerPage(value);
+        updateFilters({ perPage: value, page: 1 });
+    };
 
     const openModal = (entry: Entry, type: 'coleadores') => {
         setSelectedEntry(entry);
@@ -123,35 +170,46 @@ export default function Index({ championship, entries, topColeadores }: { champi
         }
     };
 
+    const paginatedEntries = entries.data;
+    const totalPages = entries.last_page;
+    const currentPage = entries.current_page;
+
     const PaginationControls = () => (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-parley-cream p-4 border-t border-parley-gold/50">
+        <div className="bg-parley-cream p-4 border-t border-parley-gold/50 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-sm text-parley-brown/80 font-medium text-center sm:text-left">
-                Mostrando <span className="text-parley-brown font-bold">{paginatedEntries.length}</span> de <span className="text-parley-brown font-bold">{filteredEntries.length}</span> cuadros
+                Mostrando <span className="text-parley-brown font-bold">{paginatedEntries.length}</span> de <span className="text-parley-brown font-bold">{entries.total}</span> cuadros
             </div>
             {totalPages > 1 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-2 sm:pb-0">
                     <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
+                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors whitespace-nowrap"
                     >Anterior</button>
                     <div className="flex gap-1">
-                        {[...Array(totalPages)].map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setCurrentPage(i + 1)}
-                                className={`w-8 h-8 rounded-md text-sm font-bold transition-colors ${
-                                    currentPage === i + 1
-                                        ? 'bg-parley-red text-white shadow-sm'
-                                        : 'bg-white border border-parley-gold/50 text-parley-brown hover:bg-parley-cream'
-                                }`}
-                            >{i + 1}</button>
-                        ))}
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum = i + 1;
+                            if (totalPages > 5 && currentPage > 3) {
+                                pageNum = currentPage - 3 + i + 1;
+                                if (pageNum > totalPages) pageNum = totalPages - (4 - i);
+                            }
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => handlePageChange(pageNum)}
+                                    className={`w-8 h-8 rounded-md text-sm font-bold transition-colors shrink-0 ${
+                                        currentPage === pageNum
+                                            ? 'bg-parley-red text-white shadow-sm'
+                                            : 'bg-white border border-parley-gold/50 text-parley-brown hover:bg-parley-cream'
+                                    }`}
+                                >{pageNum}</button>
+                            );
+                        })}
                     </div>
                     <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
+                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors whitespace-nowrap"
                     >Siguiente</button>
                 </div>
             )}
@@ -162,32 +220,30 @@ export default function Index({ championship, entries, topColeadores }: { champi
         <GuestLayout>
             <Head title={`Cuadros - ${championship.name}`} />
 
-            <div className="py-8">
+            <div className="py-8 bg-parley-cream min-h-screen">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
                         <Link
-                            href={route('home')}
+                            href="/"
                             className="text-sm text-parley-brown/50 hover:text-parley-red transition-colors mb-2 inline-block"
                         >
                             &larr; Volver a Campeonatos
                         </Link>
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <h1 className="text-2xl sm:text-3xl font-bold text-parley-brown leading-tight">
-                                Cuadros: {championship.name}
+                                {championship.name}
                             </h1>
-                            <div className="flex flex-row gap-2 w-full sm:w-auto">
-                                <SecondaryButton
-                                    onClick={() => setModalType('topColeadores')}
-                                    className="flex-1 sm:flex-initial justify-center py-3 sm:py-2 text-xs sm:text-sm px-2"
-                                >
-                                    Más Jugados
-                                </SecondaryButton>
-                                <PrimaryButton 
-                                    onClick={openVerifyModal}
-                                    className="flex-1 sm:flex-initial justify-center py-3 sm:py-2 text-xs sm:text-sm px-2 whitespace-nowrap"
-                                >
-                                    Verificar Ticket +
+                            <div className="flex flex-row gap-2 w-full sm:w-auto items-stretch">
+                                <PrimaryButton onClick={openVerifyModal} className="flex-1 sm:flex-initial justify-center whitespace-nowrap">
+                                    Verificar Ticket
                                 </PrimaryButton>
+                                <button 
+                                    onClick={fetchTopColeadores}
+                                    disabled={isLoadingTop}
+                                    className="px-4 py-2 bg-white border-2 border-parley-gold/20 rounded-xl text-parley-brown font-bold text-xs uppercase tracking-widest hover:bg-parley-cream transition-all flex-1 sm:flex-initial whitespace-nowrap disabled:opacity-50"
+                                >
+                                    {isLoadingTop ? 'Cargando...' : 'Más Jugados'}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -199,10 +255,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     <span className="text-sm font-medium text-parley-brown">Ver</span>
                                     <select
                                         value={itemsPerPage}
-                                        onChange={(e) => {
-                                            setItemsPerPage(Number(e.target.value));
-                                            setCurrentPage(1);
-                                        }}
+                                        onChange={(e) => handlePerPageChange(Number(e.target.value))}
                                         className="border-parley-gold/50 focus:ring-parley-red focus:border-parley-red rounded-md text-sm py-1 pr-8"
                                     >
                                         <option value={100}>100</option>
@@ -215,21 +268,26 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                 </div>
                             </div>
 
-                            <div className="w-full lg:max-w-md relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg className="h-4 w-4 text-parley-brown/40" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                                    </svg>
+                            <div className="w-full lg:max-w-md flex gap-2">
+                                <div className="relative flex-1">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg className="h-4 w-4 text-parley-brown/40" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <TextInput
+                                        placeholder="Buscar cuadro..."
+                                        className="pl-10 w-full"
+                                        value={search}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+                                    />
                                 </div>
-                                <TextInput
-                                    placeholder="Buscar por nombre de cuadro..."
-                                    className="pl-10 w-full"
-                                    value={search}
-                                    onChange={(e) => {
-                                        setSearch(e.target.value);
-                                        setCurrentPage(1);
-                                    }}
-                                />
+                                <PrimaryButton onClick={runSearch} className="px-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </PrimaryButton>
                             </div>
                         </div>
                         <PaginationControls />
@@ -242,15 +300,21 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     <tr>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 w-12">Pos</th>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">
-                                            Cuadro
+                                            <div className="flex items-center gap-1">Cuadro</div>
                                         </th>
-                                        <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60 w-16">Ver</th>
-                                        <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">CE</th>
-                                        <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">CN</th>
-                                        <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">TP</th>
-                                        {championship.has_articles && (
-                                            <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">AR</th>
-                                        )}
+                                        <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">Coleadores</th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">
+                                            <div className="flex items-center gap-1">CE</div>
+                                        </th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">
+                                            <div className="flex items-center gap-1">CN</div>
+                                        </th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">
+                                            <div className="flex items-center gap-1">TP</div>
+                                        </th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">
+                                            <div className="flex items-center gap-1">AR</div>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-parley-gold/20 bg-white">
@@ -258,24 +322,22 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                         <tr key={entry.id} className="hover:bg-parley-cream/30 transition-colors">
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown/40">{entry.rank}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown italic">{entry.name}</td>
-                                            <td className="px-4 py-4 text-center text-sm">
+                                            <td className="px-4 py-4 text-sm text-center">
                                                 <button
                                                     onClick={() => openModal(entry, 'coleadores')}
-                                                    className="inline-flex items-center text-parley-red hover:text-parley-brown transition-colors group"
-                                                    title="Ver Coleadores"
+                                                    className="inline-flex items-center text-parley-red hover:text-parley-brown transition-colors"
+                                                    title={`${entry.coleadores.length} Coleadores`}
                                                 >
-                                                    <svg className="w-6 h-6 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                                     </svg>
                                                 </button>
                                             </td>
-                                            <td className="px-4 py-4 text-center text-sm font-bold text-green-700">{entry.total_ce}</td>
-                                            <td className="px-4 py-4 text-center text-sm font-bold text-red-700">{entry.total_cn}</td>
-                                            <td className="px-4 py-4 text-center text-sm font-bold text-blue-700">{entry.total_tp}</td>
-                                            {championship.has_articles && (
-                                                <td className="px-4 py-4 text-center text-sm font-bold text-orange-700">-{entry.total_ar}</td>
-                                            )}
+                                            <td className="px-4 py-4 text-sm font-bold text-green-700">{entry.net_ce}</td>
+                                            <td className="px-4 py-4 text-sm font-bold text-red-700">{entry.total_cn}</td>
+                                            <td className="px-4 py-4 text-sm font-bold text-blue-700">{entry.total_tp}</td>
+                                            <td className="px-4 py-4 text-sm font-bold text-orange-700">-{entry.total_ar}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -372,7 +434,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
 
                     {modalType === 'topColeadores' && (
                         <div>
-                            <h3 className="text-lg font-bold text-parley-brown border-b border-parley-gold/20 pb-2 mb-4">
+                            <h3 className="text-lg font-bold text-parley-brown border-b border-parley-gold/20 pb-2 mb-4 pr-8">
                                 Top 10 Coleadores Más Jugados
                             </h3>
                             <div className="overflow-hidden border-t border-parley-gold/20 bg-white -mx-6">
@@ -385,8 +447,8 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-parley-gold/10">
-                                        {topColeadores.map((coleador, index) => (
-                                            <tr key={coleador.id} className="hover:bg-parley-cream/20 transition-colors">
+                                        {(Array.isArray(topColeadores) ? topColeadores : []).map((coleador, index) => (
+                                            <tr key={`top-col-${coleador.id}-${index}`} className="hover:bg-parley-cream/20 transition-colors">
                                                 <td className="px-4 py-3 whitespace-nowrap text-center">
                                                     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
                                                         index === 0 ? 'bg-parley-gold text-white' : 
@@ -421,7 +483,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     <span className="w-6 text-center">CE</span>
                                     <span className="w-6 text-center">CN</span>
                                     <span className="w-6 text-center">TP</span>
-                                    {championship.has_articles && <span className="w-6 text-center">AR</span>}
+                                    <span className="w-6 text-center">AR</span>
                                 </div>
                             </div>
                             <ul className="space-y-2">
@@ -437,7 +499,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                             <span className="w-6 text-center text-green-700">{coleador.net_ce}</span>
                                             <span className="w-6 text-center text-red-700">{coleador.total_cn}</span>
                                             <span className="w-6 text-center text-blue-700">{coleador.total_tp}</span>
-                                            {championship.has_articles && <span className="w-6 text-center text-orange-700">-{coleador.total_ar}</span>}
+                                            <span className="w-6 text-center text-orange-700">-{coleador.total_ar}</span>
                                         </div>
                                     </li>
                                 ))}

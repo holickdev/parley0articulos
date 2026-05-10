@@ -9,6 +9,7 @@ use App\Http\Controllers\Guest\PublicController;
 
 Route::get('/', [PublicController::class, 'index'])->name('home');
 Route::get('/championships/{championship}/entries', [PublicController::class, 'entries'])->name('public.entries');
+Route::get('/championships/{championship}/top-coleadores', [PublicController::class, 'getTopColeadores'])->name('public.championships.top-coleadores');
 Route::post('/championships/{championship}/check-combination', [PublicController::class, 'checkCombination'])->name('public.entries.check');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -30,6 +31,7 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('championships.entries', \App\Http\Controllers\Admin\EntryController::class);
         Route::get('championships/{championship}/entries-pdf', [\App\Http\Controllers\Admin\EntryController::class, 'downloadPdf'])->name('championships.entries.pdf');
+        Route::get('championships/{championship}/top-coleadores', [\App\Http\Controllers\Admin\EntryController::class, 'getTopColeadores'])->name('championships.top-coleadores');
         Route::post('championships/{championship}/entries/check-combination', [\App\Http\Controllers\Admin\EntryController::class, 'checkCombination'])->name('championships.entries.check');
 
         Route::resource('rounds', \App\Http\Controllers\Admin\RoundController::class);

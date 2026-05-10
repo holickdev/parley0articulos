@@ -35,12 +35,12 @@ export default function Guest({ children }: PropsWithChildren) {
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="flex h-20 justify-between items-center">
                             <Link href="/" className="flex items-center gap-3">
-                                <ApplicationLogo className="h-12 w-12 text-white" />
+                                <ApplicationLogo className="h-20 w-20 text-white" />
                                 <span className="sr-only">Parley 0 Artículos</span>
                                 <img 
                                     src="/parley0articulos-title.svg" 
                                     alt="Parley 0 Artículos" 
-                                    className="h-8 sm:h-10 w-auto"
+                                    className="h-10 sm:h-12 w-auto"
                                 />
                             </Link>
                             

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Entry;
 use App\Models\Championship;
 use App\Models\Coleador;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -17,57 +18,13 @@ class EntryController extends Controller
 {
     public function downloadPdf(Championship $championship)
     {
-        $entries = Entry::where('championship_id', $championship->id)
-            ->with(['coleadores.scores' => function($query) use ($championship) {
-                $query->whereHas('round', function($q) use ($championship) {
-                    $q->where('championship_id', $championship->id);
-                });
-            }])
-            ->get()
-            ->map(function ($entry) {
-                $totalCE = 0;
-                $totalCN = 0;
-                $totalTP = 0;
-                $totalAR = 0;
+        $data = $this->getReportData($championship);
 
-                foreach ($entry->coleadores as $coleador) {
-                    $coleadorCE = $coleador->scores->sum('effective_coleadas');
-                    $coleadorCN = $coleador->scores->sum('null_coleadas');
-                    $coleadorTP = $coleador->scores->sum('gate_bulls');
-                    $coleadorAR = $coleador->scores->reduce(function ($carry, $score) {
-                        $articles = is_array($score->articles) ? $score->articles : [];
-                        return $carry + array_sum($articles);
-                    }, 0);
+        if (request()->wantsJson() || request()->has('json')) {
+            return response()->json($data);
+        }
 
-                    $coleador->total_ce = $coleadorCE;
-                    $coleador->total_cn = $coleadorCN;
-                    $coleador->total_tp = $coleadorTP;
-                    $coleador->total_ar = $coleadorAR;
-                    $coleador->net_ce = $coleadorCE - $coleadorAR;
-
-                    $totalCE += $coleadorCE;
-                    $totalCN += $coleadorCN;
-                    $totalTP += $coleadorTP;
-                    $totalAR += $coleadorAR;
-                }
-
-                $entry->total_ce = $totalCE;
-                $entry->total_cn = $totalCN;
-                $entry->total_tp = $totalTP;
-                $entry->total_ar = $totalAR;
-                $entry->net_ce = $totalCE - $totalAR;
-
-                return $entry;
-            })
-            ->sortByDesc('net_ce')
-            ->values();
-
-        $pdf = Pdf::loadView('reports.entries_pdf', [
-            'championship' => $championship,
-            'entries' => $entries,
-            'date' => now()->format('d/m/Y H:i'),
-            'orientation' => $championship->coleadores_count > 4 ? 'landscape' : 'portrait'
-        ]);
+        $pdf = Pdf::loadView('reports.entries_pdf', $data);
 
         if ($championship->coleadores_count > 4) {
             $pdf->setPaper('a4', 'landscape');
@@ -76,73 +33,158 @@ class EntryController extends Controller
         return $pdf->download("Listado de Cuadros - {$championship->name}.pdf");
     }
 
-    public function index(Championship $championship)
+    private function getReportData(Championship $championship)
     {
-        $entries = Entry::where('championship_id', $championship->id)
-            ->with(['coleadores.scores' => function($query) use ($championship) {
-                $query->whereHas('round', function($q) use ($championship) {
-                    $q->where('championship_id', $championship->id);
-                });
-            }])
-            ->latest()
-            ->get()
-            ->map(function ($entry) {
-                $totalCE = 0;
-                $totalCN = 0;
-                $totalTP = 0;
-                $totalAR = 0;
+        // Reutilizamos la consulta base del index para el reporte, pero obteniendo todo (sin paginar)
+        $entries = $this->buildEntriesQuery($championship, null, 'net_ce', 'desc')->get();
 
-                foreach ($entry->coleadores as $coleador) {
-                    $coleadorCE = $coleador->scores->sum('effective_coleadas');
-                    $coleadorCN = $coleador->scores->sum('null_coleadas');
-                    $coleadorTP = $coleador->scores->sum('gate_bulls');
-                    $coleadorAR = $coleador->scores->reduce(function ($carry, $score) {
-                        $articles = is_array($score->articles) ? $score->articles : [];
-                        return $carry + array_sum($articles);
-                    }, 0);
+        // Calculamos el rank manualmente para el reporte completo
+        $entries->each(function ($entry, $index) {
+            $entry->rank = $index + 1;
+        });
 
-                    $coleador->total_ce = $coleadorCE;
-                    $coleador->total_cn = $coleadorCN;
-                    $coleador->total_tp = $coleadorTP;
-                    $coleador->total_ar = $coleadorAR;
-                    $coleador->net_ce = $coleadorCE - $coleadorAR;
-
-                    $totalCE += $coleadorCE;
-                    $totalCN += $coleadorCN;
-                    $totalTP += $coleadorTP;
-                    $totalAR += $coleadorAR;
-                }
-
-                $entry->total_ce = $totalCE;
-                $entry->total_cn = $totalCN;
-                $entry->total_tp = $totalTP;
-                $entry->total_ar = $totalAR;
-                $entry->net_ce = $totalCE - $totalAR;
-
-                return $entry;
-            })
-            ->sortByDesc('net_ce')
-            ->values()
-            ->map(function ($entry, $index) {
-                $entry->rank = $index + 1;
-                return $entry;
-            });
-
-        $topColeadores = DB::table('entry_coleador')
-            ->join('entries', 'entry_coleador.entry_id', '=', 'entries.id')
-            ->join('coleadores', 'entry_coleador.coleador_id', '=', 'coleadores.id')
-            ->where('entries.championship_id', $championship->id)
-            ->select('coleadores.id', 'coleadores.name', DB::raw('count(*) as entries_count'))
-            ->groupBy('coleadores.id', 'coleadores.name')
-            ->orderByDesc('entries_count')
-            ->limit(10)
-            ->get();
-
-        return Inertia::render('Admin/Entries/Index', [
+        return [
             'championship' => $championship,
             'entries' => $entries,
-            'topColeadores' => $topColeadores
+            'date' => now()->format('d/m/Y H:i'),
+            'orientation' => $championship->coleadores_count > 4 ? 'landscape' : 'portrait'
+        ];
+    }
+
+    public function index(Championship $championship, Request $request)
+    {
+        $search = $request->input('search');
+        $sortBy = $request->input('sortBy', 'ce');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $perPage = (int) $request->input('perPage', 100);
+        $page = (int) $request->input('page', 1);
+
+        $sortColumn = match ($sortBy) {
+            'name' => 'entries.name',
+            'cn' => 'total_cn',
+            'tp' => 'total_tp',
+            'ar' => 'total_ar',
+            default => 'net_ce',
+        };
+
+        $query = $this->buildEntriesQuery($championship, $search, $sortColumn, $sortDirection);
+
+        // Paginación real a nivel de SQL
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Calcular rank para la página actual
+        $paginatedItems = $paginator->getCollection()->map(function ($entry, $index) use ($page, $perPage) {
+            $entry->rank = (($page - 1) * $perPage) + $index + 1;
+            return $entry;
+        });
+
+        return Inertia::render('Admin/Entries/Index', [
+            'championship' => $championship->load('coleadores:id,name'),
+            'entries' => [
+                'data' => $paginatedItems,
+                'total' => $paginator->total(),
+                'per_page' => $paginator->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+            ],
+            'filters' => $request->only(['search', 'sortBy', 'sortDirection', 'perPage'])
         ]);
+    }
+
+    /**
+     * Construye la consulta SQL completa integrando estadísticas con JoinSub
+     */
+    private function buildEntriesQuery(Championship $championship, ?string $search, string $sortColumn, string $sortDirection)
+    {
+        // 1. Subconsulta: Totales de Artículos por Score para evitar duplicidad en el Join principal
+        $articleTotals = DB::table('articles')
+            ->select('score_id', DB::raw('SUM(points) as total_points'))
+            ->groupBy('score_id');
+
+        // 2. Subconsulta: Estadísticas consolidadas por Coleador
+        $coleadorStats = DB::table('scores')
+            ->join('rounds', 'scores.round_id', '=', 'rounds.id')
+            ->leftJoinSub($articleTotals, 'at', 'scores.id', '=', 'at.score_id')
+            ->where('rounds.championship_id', $championship->id)
+            ->select(
+                'scores.coleador_id',
+                DB::raw('COALESCE(SUM(scores.effective_coleadas), 0) as ce'),
+                DB::raw('COALESCE(SUM(scores.null_coleadas), 0) as cn'),
+                DB::raw('COALESCE(SUM(scores.gate_bulls), 0) as tp'),
+                DB::raw('COALESCE(SUM(at.total_points), 0) as ar')
+            )
+            ->groupBy('scores.coleador_id');
+
+        // 3. Subconsulta: Estadísticas por Cuadro (Entry)
+        $entryStats = DB::table('entry_coleador')
+            ->joinSub($coleadorStats, 'cs', function ($join) {
+                $join->on('entry_coleador.coleador_id', '=', 'cs.coleador_id');
+            })
+            ->select(
+                'entry_coleador.entry_id',
+                DB::raw('COALESCE(SUM(cs.ce), 0) as total_ce'),
+                DB::raw('COALESCE(SUM(cs.cn), 0) as total_cn'),
+                DB::raw('COALESCE(SUM(cs.tp), 0) as total_tp'),
+                DB::raw('COALESCE(SUM(cs.ar), 0) as total_ar'),
+                DB::raw('(COALESCE(SUM(cs.ce), 0) - COALESCE(SUM(cs.ar), 0)) as net_ce')
+            )
+            ->groupBy('entry_coleador.entry_id');
+
+        // 4. Consulta Principal
+        $query = Entry::query()
+            ->where('entries.championship_id', $championship->id)
+            ->leftJoinSub($entryStats, 'es', function ($join) {
+                $join->on('entries.id', '=', 'es.entry_id');
+            })
+            ->select(
+                'entries.*',
+                DB::raw('COALESCE(es.total_ce, 0) as total_ce'),
+                DB::raw('COALESCE(es.total_cn, 0) as total_cn'),
+                DB::raw('COALESCE(es.total_tp, 0) as total_tp'),
+                DB::raw('COALESCE(es.total_ar, 0) as total_ar'),
+                DB::raw('COALESCE(es.net_ce, 0) as net_ce')
+            )
+            ->with(['coleadores' => function ($q) use ($coleadorStats) {
+                $q->leftJoinSub($coleadorStats, 'cs', function($join) {
+                    $join->on('coleadores.id', '=', 'cs.coleador_id');
+                })
+                    ->select(
+                        'coleadores.id',
+                        'coleadores.name',
+                        DB::raw('COALESCE(cs.ce, 0) as total_ce'),
+                        DB::raw('COALESCE(cs.cn, 0) as total_cn'),
+                        DB::raw('COALESCE(cs.tp, 0) as total_tp'),
+                        DB::raw('COALESCE(cs.ar, 0) as total_ar'),
+                        DB::raw('(COALESCE(cs.ce, 0) - COALESCE(cs.ar, 0)) as net_ce')
+                    );
+            }]);
+
+        if ($search) {
+            $query->where('entries.name', 'like', "%{$search}%");
+        }
+
+        $query->orderBy($sortColumn, $sortDirection)
+            ->orderBy('entries.name', 'asc');
+
+        return $query;
+    }
+
+    public function getTopColeadores(Championship $championship)
+    {
+        // Esto está bien, pero puedes ahorrar el get()->toArray() y luego el JSON de la collection.
+        $topColeadores = Cache::remember("top_coleadores_{$championship->id}", 60, function() use ($championship) {
+            return DB::table('entry_coleador')
+                ->join('entries', 'entry_coleador.entry_id', '=', 'entries.id')
+                ->join('coleadores', 'entry_coleador.coleador_id', '=', 'coleadores.id')
+                ->where('entries.championship_id', $championship->id)
+                ->select('coleadores.id', 'coleadores.name', DB::raw('count(*) as entries_count'))
+                ->groupBy('coleadores.id', 'coleadores.name')
+                ->orderByDesc('entries_count')
+                ->limit(10)
+                ->get();
+        });
+
+        return response()->json($topColeadores);
     }
 
     public function create(Championship $championship)

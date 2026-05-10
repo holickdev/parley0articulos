@@ -3,11 +3,17 @@ import { Head, Link, router } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import Modal from '@/Components/Modal';
 import Dropdown from '@/Components/Dropdown';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import axios from 'axios';
+import LoadingToast from '@/Components/LoadingToast';
+
+// PDFMake imports
+import pdfMake from "pdfmake/build/pdfmake";
+import * as pdfFonts from "pdfmake/build/vfs_fonts";
+(pdfMake as any).vfs = (pdfFonts as any).pdfMake ? (pdfFonts as any).pdfMake.vfs : (pdfFonts as any).vfs;
 
 interface Coleador {
     id: number;
@@ -49,6 +55,14 @@ interface Championship {
     coleadores: { id: number; name: string }[];
 }
 
+interface EntriesResponse {
+    data: Entry[];
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+}
+
 const statusStyles = {
     pending: 'bg-yellow-100 text-yellow-800',
     approved: 'bg-green-100 text-green-800',
@@ -61,10 +75,35 @@ const statusLabels = {
     rejected: 'Rechazado',
 };
 
-export default function Index({ championship, entries, topColeadores }: { championship: Championship, entries: Entry[], topColeadores: TopColeador[] }) {
+export default function Index({ 
+    championship, 
+    entries, 
+    filters
+}: { 
+    championship: Championship, 
+    entries: EntriesResponse, 
+    filters: any
+}) {
     const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
     const [modalType, setModalType] = useState<'coleadores' | 'topColeadores' | 'verify' | null>(null);
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const [topColeadores, setTopColeadores] = useState<TopColeador[]>([]);
+    const [isLoadingTop, setIsLoadingTop] = useState(false);
 
+    // ... (rest of states)
+
+    const fetchTopColeadores = async () => {
+        setIsLoadingTop(true);
+        try {
+            const response = await axios.get(route('admin.championships.top-coleadores', championship.id));
+            setTopColeadores(response.data);
+            setModalType('topColeadores');
+        } catch (error) {
+            console.error("Error fetching top coleadores:", error);
+        } finally {
+            setIsLoadingTop(false);
+        }
+    };
     // Verification State
     const [selectedColeadores, setSelectedColeadores] = useState<number[]>([]);
     const [searchTermVerify, setSearchTermVerify] = useState('');
@@ -72,55 +111,190 @@ export default function Index({ championship, entries, topColeadores }: { champi
     const [validationMessage, setValidationMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
     // DataTable States
-    const [search, setSearch] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(100);
-    const [sortBy, setSortBy] = useState<'name' | 'ce' | 'cn' | 'tp' | 'ar'>('ce');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [search, setSearch] = useState(filters.search || '');
+    const [itemsPerPage, setItemsPerPage] = useState(filters.perPage || 100);
+    const [sortBy, setSortBy] = useState<'name' | 'ce' | 'cn' | 'tp' | 'ar'>(filters.sortBy || 'ce');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(filters.sortDirection || 'desc');
 
-    const filteredEntries = useMemo(() => {
-        return entries
-            .filter(entry =>
-                entry.name.toLowerCase().includes(search.toLowerCase())
-            )
-            .sort((a, b) => {
-                let valA: any, valB: any;
+    const updateFilters = (newFilters: any) => {
+        router.get(route('admin.championships.entries.index', championship.id), {
+            ...filters,
+            ...newFilters,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['entries']
+        });
+    };
 
-                if (sortBy === 'name') {
-                    valA = a.name.toLowerCase();
-                    valB = b.name.toLowerCase();
-                } else if (sortBy === 'ce') {
-                    valA = a.net_ce;
-                    valB = b.net_ce;
-                } else if (sortBy === 'cn') {
-                    valA = a.total_cn;
-                    valB = b.total_cn;
-                } else if (sortBy === 'tp') {
-                    valA = a.total_tp;
-                    valB = b.total_tp;
-                } else if (sortBy === 'ar') {
-                    valA = a.total_ar;
-                    valB = b.total_ar;
-                }
+    const runSearch = () => {
+        updateFilters({ search, page: 1 });
+    };
 
-                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-                return 0;
-            });
-    }, [entries, search, sortBy, sortDirection]);
-
-    const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
-    const paginatedEntries = filteredEntries.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const handleSearch = (value: string) => {
+        setSearch(value);
+    };
 
     const toggleSort = (column: 'name' | 'ce' | 'cn' | 'tp' | 'ar') => {
-        if (sortBy === column) {
-            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortBy(column);
-            setSortDirection('asc');
+        const newDirection = sortBy === column && sortDirection === 'asc' ? 'desc' : 'asc';
+        setSortBy(column);
+        setSortDirection(newDirection);
+        updateFilters({ sortBy: column, sortDirection: newDirection, page: 1 });
+    };
+
+    const handlePageChange = (page: number) => {
+        updateFilters({ page });
+    };
+
+    const handlePerPageChange = (value: number) => {
+        setItemsPerPage(value);
+        updateFilters({ perPage: value, page: 1 });
+    };
+
+    const getBase64ImageFromURL = (url: string): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.setAttribute("crossOrigin", "anonymous");
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext("2d");
+                ctx?.drawImage(img, 0, 0);
+                const dataURL = canvas.toDataURL("image/png");
+                resolve(dataURL);
+            };
+            img.onerror = (error) => reject(error);
+            img.src = url;
+        });
+    };
+
+    const generatePDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const response = await axios.get(route('admin.championships.entries.pdf', championship.id), {
+                params: { json: 1 }
+            });
+            
+            const data = response.data;
+            const logo = await getBase64ImageFromURL("/logo.webp").catch(() => null);
+
+            const docDefinition: any = {
+                pageSize: 'A4',
+                pageOrientation: data.orientation,
+                pageMargins: [20, 20, 20, 30],
+                content: [
+                    {
+                        columns: [
+                            logo ? { image: logo, width: 50 } : { text: '', width: 50 },
+                            {
+                                stack: [
+                                    { text: 'PARLEY0ARTICULOS', style: 'headerTitle' },
+                                    { text: 'CONTROL DE CUADROS', style: 'headerSubtitle' },
+                                    { text: championship.name, style: 'headerChampionship' }
+                                ],
+                                alignment: 'center',
+                                margin: [0, 5, 0, 0]
+                            },
+                            { text: '', width: 50 }
+                        ],
+                        margin: [0, 0, 0, 15]
+                    },
+                    {
+                        table: {
+                            headerRows: 2,
+                            stickyHeader: true,
+                            widths: [20, '*', ...Array(championship.coleadores_count * 2).fill('auto'), 25, 25, 25, 25],
+                            body: [
+                                [
+                                    { text: '#', style: 'tableHeader', rowSpan: 2 },
+                                    { text: 'Nombre del Cuadro', style: 'tableHeader', rowSpan: 2 },
+                                    ...Array.from({ length: championship.coleadores_count }).map((_, i) => ({
+                                        text: `Coleador ${i + 1}`,
+                                        style: 'tableHeader',
+                                        colSpan: 2,
+                                        alignment: 'center'
+                                    })).flatMap(item => [item, {}]),
+                                    { text: 'TOTALES CUADRO', style: 'tableHeaderTotal', colSpan: 4, alignment: 'center' },
+                                    {}, {}, {}
+                                ],
+                                [
+                                    {}, {},
+                                    ...Array.from({ length: championship.coleadores_count }).map(() => [
+                                        { text: 'Nombre', style: 'tableHeader' },
+                                        { text: 'CE', style: 'tableHeaderCE' }
+                                    ]).flat(),
+                                    { text: 'CE', style: 'tableHeaderCE' },
+                                    { text: 'CN', style: 'tableHeaderCN' },
+                                    { text: 'TP', style: 'tableHeaderTP' },
+                                    { text: 'AR', style: 'tableHeaderAR' }
+                                ],
+                                ...data.entries.map((entry: any, index: number) => [
+                                    { text: index + 1, style: 'rankCell', alignment: 'center' },
+                                    { text: entry.name, style: 'entryName' },
+                                    ...Array.from({ length: championship.coleadores_count }).map((_, i) => {
+                                        const col = entry.coleadores[i];
+                                        return [
+                                            { text: col ? col.name : '-', style: 'cellText' },
+                                            { text: col ? col.total_ce : '-', style: 'cellCE', alignment: 'center' }
+                                        ];
+                                    }).flat(),
+                                    { text: entry.total_ce, style: 'cellCETotal', alignment: 'center' },
+                                    { text: entry.total_cn, style: 'cellCNTotal', alignment: 'center' },
+                                    { text: entry.total_tp, style: 'cellTPTotal', alignment: 'center' },
+                                    { text: entry.total_ar > 0 ? `-${entry.total_ar}` : '0', style: 'cellARTotal', alignment: 'center' }
+                                ])
+                            ]
+                        },
+                        layout: {
+                            hLineWidth: () => 0.5,
+                            vLineWidth: () => 0.5,
+                            hLineColor: () => '#00EAFF44',
+                            vLineColor: () => '#00EAFF44',
+                            paddingLeft: () => 3,
+                            paddingRight: () => 3,
+                            paddingTop: () => 4,
+                            paddingBottom: () => 4,
+                        }
+                    }
+                ],
+                footer: (currentPage: number, pageCount: number) => {
+                    return {
+                        text: `PARLEY0ARTICULOS — ${championship.name} — Generado el ${data.date} — Pág ${currentPage}/${pageCount}`,
+                        style: 'footerStyle',
+                        alignment: 'center',
+                        margin: [0, 10, 0, 0]
+                    };
+                },
+                styles: {
+                    headerTitle: { fontSize: 16, bold: true, color: '#0047FF', characterSpacing: 2 },
+                    headerSubtitle: { fontSize: 10, bold: true, color: '#00EAFF' },
+                    headerChampionship: { fontSize: 12, bold: true, color: '#001A40' },
+                    tableHeader: { fontSize: 7, bold: true, fillColor: '#001A40', color: '#F0F7FF', alignment: 'center' },
+                    tableHeaderCE: { fontSize: 7, bold: true, fillColor: '#d1fae5', color: '#065f46', alignment: 'center' },
+                    tableHeaderCN: { fontSize: 7, bold: true, fillColor: '#fee2e2', color: '#991b1b', alignment: 'center' },
+                    tableHeaderTP: { fontSize: 7, bold: true, fillColor: '#dbeafe', color: '#1e40af', alignment: 'center' },
+                    tableHeaderAR: { fontSize: 7, bold: true, fillColor: '#fef9c3', color: '#854d0e', alignment: 'center' },
+                    tableHeaderTotal: { fontSize: 7, bold: true, fillColor: '#001A40', color: '#F0F7FF' },
+                    cellText: { fontSize: 7 },
+                    cellCE: { fontSize: 7, color: '#065f46', bold: true },
+                    cellCETotal: { fontSize: 7, color: '#065f46', bold: true, fillColor: '#d1fae5' },
+                    cellCNTotal: { fontSize: 7, color: '#991b1b', bold: true, fillColor: '#fee2e2' },
+                    cellTPTotal: { fontSize: 7, color: '#1e40af', bold: true, fillColor: '#dbeafe' },
+                    cellARTotal: { fontSize: 7, color: '#b91c1c', bold: true, fillColor: '#fef9c3' },
+                    rankCell: { fontSize: 7, bold: true, fillColor: '#F0F7FF', color: '#0047FF' },
+                    entryName: { fontSize: 7, bold: true, color: '#001A40' },
+                    footerStyle: { fontSize: 7, color: '#00EAFF' }
+                }
+            };
+
+            pdfMake.createPdf(docDefinition).download(`Listado de Cuadros - ${championship.name}.pdf`);
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Error al generar el PDF. Por favor intente de nuevo.");
+        } finally {
+            setIsGeneratingPdf(false);
         }
     };
 
@@ -186,35 +360,47 @@ export default function Index({ championship, entries, topColeadores }: { champi
         }
     };
 
+    const paginatedEntries = entries.data;
+    const totalPages = entries.last_page;
+    const currentPage = entries.current_page;
+
     const PaginationControls = () => (
         <div className="bg-parley-cream p-4 border-t border-parley-gold/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-parley-brown/80 font-medium">
-                Mostrando <span className="text-parley-brown font-bold">{paginatedEntries.length}</span> de <span className="text-parley-brown font-bold">{filteredEntries.length}</span> cuadros
+            <div className="text-sm text-parley-brown/80 font-medium text-center sm:text-left">
+                Mostrando <span className="text-parley-brown font-bold">{paginatedEntries.length}</span> de <span className="text-parley-brown font-bold">{entries.total}</span> cuadros
             </div>
             {totalPages > 1 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-2 sm:pb-0">
                     <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
+                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors whitespace-nowrap"
                     >Anterior</button>
                     <div className="flex gap-1">
-                        {[...Array(totalPages)].map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setCurrentPage(i + 1)}
-                                className={`w-8 h-8 rounded-md text-sm font-bold transition-colors ${
-                                    currentPage === i + 1
-                                        ? 'bg-parley-red text-white shadow-sm'
-                                        : 'bg-white border border-parley-gold/50 text-parley-brown hover:bg-parley-cream'
-                                }`}
-                            >{i + 1}</button>
-                        ))}
+                        {/* Show limited pages if too many */}
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum = i + 1;
+                            if (totalPages > 5 && currentPage > 3) {
+                                pageNum = currentPage - 3 + i + 1;
+                                if (pageNum > totalPages) pageNum = totalPages - (4 - i);
+                            }
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => handlePageChange(pageNum)}
+                                    className={`w-8 h-8 rounded-md text-sm font-bold transition-colors shrink-0 ${
+                                        currentPage === pageNum
+                                            ? 'bg-parley-red text-white shadow-sm'
+                                            : 'bg-white border border-parley-gold/50 text-parley-brown hover:bg-parley-cream'
+                                    }`}
+                                >{pageNum}</button>
+                            );
+                        })}
                     </div>
                     <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
+                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors whitespace-nowrap"
                     >Siguiente</button>
                 </div>
             )}
@@ -260,18 +446,19 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                         >
                                             Verificar Ticket
                                         </button>
-                                        <a 
-                                            href={route('admin.championships.entries.pdf', championship.id)} 
-                                            target="_blank" 
-                                            className="block w-full px-4 py-2 text-left text-sm font-bold text-parley-brown hover:bg-parley-cream transition-colors"
-                                        >
-                                            Imprimir PDF
-                                        </a>
                                         <button 
-                                            onClick={() => setModalType('topColeadores')}
-                                            className="block w-full px-4 py-2 text-left text-sm font-bold text-parley-brown hover:bg-parley-cream transition-colors"
+                                            onClick={generatePDF}
+                                            disabled={isGeneratingPdf}
+                                            className="block w-full px-4 py-2 text-left text-sm font-bold text-parley-brown hover:bg-parley-cream transition-colors disabled:opacity-50"
                                         >
-                                            Más Jugados
+                                            {isGeneratingPdf ? 'Generando...' : 'Imprimir PDF'}
+                                        </button>
+                                        <button 
+                                            onClick={fetchTopColeadores}
+                                            disabled={isLoadingTop}
+                                            className="block w-full px-4 py-2 text-left text-sm font-bold text-parley-brown hover:bg-parley-cream transition-colors disabled:opacity-50"
+                                        >
+                                            {isLoadingTop ? 'Cargando...' : 'Más Jugados'}
                                         </button>
                                     </Dropdown.Content>
                                 </Dropdown>
@@ -286,10 +473,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     <span className="text-sm font-medium text-parley-brown">Ver</span>
                                     <select
                                         value={itemsPerPage}
-                                        onChange={(e) => {
-                                            setItemsPerPage(Number(e.target.value));
-                                            setCurrentPage(1);
-                                        }}
+                                        onChange={(e) => handlePerPageChange(Number(e.target.value))}
                                         className="border-parley-gold/50 focus:ring-parley-red focus:border-parley-red rounded-md text-sm py-1 pr-8"
                                     >
                                         <option value={100}>100</option>
@@ -305,7 +489,11 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     <span className="text-sm font-medium text-parley-brown">Ordenar por</span>
                                     <select
                                         value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value as any)}
+                                        onChange={(e) => {
+                                            const val = e.target.value as any;
+                                            setSortBy(val);
+                                            updateFilters({ sortBy: val, page: 1 });
+                                        }}
                                         className="border-parley-gold/50 focus:ring-parley-red focus:border-parley-red rounded-md text-sm py-1 pr-8"
                                     >
                                         <option value="name">Cuadro</option>
@@ -316,7 +504,11 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                     </select>
                                     <button
                                         type="button"
-                                        onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                        onClick={() => {
+                                            const dir = sortDirection === 'asc' ? 'desc' : 'asc';
+                                            setSortDirection(dir);
+                                            updateFilters({ sortDirection: dir, page: 1 });
+                                        }}
                                         className="p-1.5 bg-parley-cream hover:bg-parley-cream/50 border border-parley-gold/50 rounded-md transition-colors"
                                     >
                                         {sortDirection === 'asc' ? (
@@ -332,21 +524,26 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                 </div>
                             </div>
 
-                            <div className="w-full lg:max-w-md relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg className="h-4 w-4 text-parley-brown/40" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                                    </svg>
+                            <div className="w-full lg:max-w-md flex gap-2">
+                                <div className="relative flex-1">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg className="h-4 w-4 text-parley-brown/40" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <TextInput
+                                        placeholder="Buscar cuadro..."
+                                        className="pl-10 w-full"
+                                        value={search}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+                                    />
                                 </div>
-                                <TextInput
-                                    placeholder="Buscar por nombre de cuadro..."
-                                    className="pl-10 w-full"
-                                    value={search}
-                                    onChange={(e) => {
-                                        setSearch(e.target.value);
-                                        setCurrentPage(1);
-                                    }}
-                                />
+                                <PrimaryButton onClick={runSearch} className="px-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </PrimaryButton>
                             </div>
                         </div>
                         <PaginationControls />
@@ -361,7 +558,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('name')}>
                                             <div className="flex items-center gap-1">Cuadro</div>
                                         </th>
-                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">Coleadores</th>
+                                        <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-parley-brown/60">Coleadores</th>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">Teléfono</th>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">Pago</th>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('ce')}>
@@ -385,12 +582,16 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                         <tr key={entry.id} className="hover:bg-parley-cream/30 transition-colors">
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown/40">{entry.rank}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown italic">{entry.name}</td>
-                                            <td className="px-4 py-4 text-sm">
+                                            <td className="px-4 py-4 text-sm text-center">
                                                 <button
                                                     onClick={() => openModal(entry, 'coleadores')}
-                                                    className="inline-flex items-center text-parley-red hover:text-parley-brown transition-colors font-bold"
+                                                    className="inline-flex items-center text-parley-red hover:text-parley-brown transition-colors"
+                                                    title={`${entry.coleadores.length} Coleadores`}
                                                 >
-                                                    {entry.coleadores.length} Coleadores
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                                    </svg>
                                                 </button>
                                             </td>
                                             <td className="px-4 py-4 text-sm font-medium text-parley-brown">{entry.phone}</td>
@@ -452,39 +653,7 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                 </tbody>
                             </table>
                         </div>
-                        
-                        <div className="bg-parley-cream p-4 border-t border-parley-gold/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <div className="text-sm text-parley-brown/80 font-medium">
-                                Mostrando <span className="text-parley-brown font-bold">{paginatedEntries.length}</span> de <span className="text-parley-brown font-bold">{filteredEntries.length}</span> cuadros
-                            </div>
-                            {totalPages > 1 && (
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        disabled={currentPage === 1}
-                                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
-                                    >Anterior</button>
-                                    <div className="flex gap-1">
-                                        {[...Array(totalPages)].map((_, i) => (
-                                            <button
-                                                key={i}
-                                                onClick={() => setCurrentPage(i + 1)}
-                                                className={`w-8 h-8 rounded-md text-sm font-bold transition-colors ${
-                                                    currentPage === i + 1
-                                                        ? 'bg-parley-red text-white shadow-sm'
-                                                        : 'bg-white border border-parley-gold/50 text-parley-brown hover:bg-parley-cream'
-                                                }`}
-                                            >{i + 1}</button>
-                                        ))}
-                                    </div>
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className="px-3 py-1 bg-white border border-parley-gold/50 rounded-md text-sm font-bold disabled:opacity-50 hover:bg-parley-cream transition-colors"
-                                    >Siguiente</button>
-                                </div>
-                            )}
-                        </div>
+                        <PaginationControls />
                     </div>
                 </div>
             </div>
@@ -588,8 +757,8 @@ export default function Index({ championship, entries, topColeadores }: { champi
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-parley-gold/10">
-                                        {topColeadores.map((coleador, index) => (
-                                            <tr key={coleador.id} className="hover:bg-parley-cream/20 transition-colors">
+                                        {(Array.isArray(topColeadores) ? topColeadores : []).map((coleador, index) => (
+                                            <tr key={`top-col-${coleador.id}-${index}`} className="hover:bg-parley-cream/20 transition-colors">
                                                 <td className="px-4 py-3 whitespace-nowrap text-center">
                                                     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
                                                         index === 0 ? 'bg-parley-gold text-white' : 
@@ -653,6 +822,11 @@ export default function Index({ championship, entries, topColeadores }: { champi
                     </div>
                 </div>
             </Modal>
+
+            <LoadingToast 
+                show={isGeneratingPdf} 
+                message="Esto puede tardar unos segundos..." 
+            />
         </AuthenticatedLayout>
     );
 }

@@ -112,7 +112,20 @@ class ChampionshipController extends Controller
 
     public function destroy(Championship $championship)
     {
-        $championship->delete();
-        return redirect()->route('admin.championships.index')->with('success', 'Campeonato eliminado.');
+        DB::transaction(function () use ($championship) {
+            // Obtener los IDs de los coleadores asociados antes de borrar la relación
+            $coleadorIds = $championship->coleadores()->pluck('coleador_id');
+
+            // El borrado del campeonato disparará el cascade en la DB para:
+            // rounds, entries, scores, articles y la tabla intermedia championship_coleador.
+            $championship->delete();
+
+            // Limpiar coleadores que ya no estén en NINGÚN campeonato (huérfanos)
+            Coleador::whereIn('id', $coleadorIds)
+                ->whereDoesntHave('championships')
+                ->delete();
+        });
+
+        return redirect()->route('admin.championships.index')->with('success', 'Campeonato y datos relacionados eliminados correctamente.');
     }
 }
