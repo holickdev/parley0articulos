@@ -28,6 +28,7 @@ interface Coleador {
 
 interface Entry {
     id: number;
+    number: string;
     name: string;
     phone: string;
     payment_type: string;

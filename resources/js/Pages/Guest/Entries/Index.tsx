@@ -21,6 +21,7 @@ interface Coleador {
 
 interface Entry {
     id: number;
+    number: string;
     name: string;
     total_ce: number;
     total_cn: number;
