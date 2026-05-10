@@ -7,8 +7,14 @@ use Illuminate\Database\Seeder;
 
 class ColeadorSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        Coleador::factory(100)->create();
+        // Crear 100 coleadores si no hay suficientes
+        if (Coleador::count() < 100) {
+            Coleador::factory()->count(100)->create();
+        }
     }
 }

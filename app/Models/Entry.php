@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['championship_id', 'name', 'phone', 'payment_type', 'reference', 'status', 'combination_hash'])]
+#[Fillable(['championship_id', 'number', 'name', 'phone', 'payment_type', 'reference', 'status', 'combination_hash'])]
 class Entry extends Model
 {
     /** @use HasFactory<\Database\Factories\EntryFactory> */

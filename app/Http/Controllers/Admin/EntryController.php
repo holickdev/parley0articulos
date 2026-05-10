@@ -268,9 +268,12 @@ class EntryController extends Controller
 
         try {
             return DB::transaction(function () use ($validated, $championship, $hash, $lockKey) {
+                // 1. Bloqueamos el registro del Campeonato. 
+                // Esto serializa las peticiones concurrentes para este torneo específico y protege el cálculo del 'number'.
+                Championship::where('id', $championship->id)->lockForUpdate()->first();
+
                 $exists = Entry::where('championship_id', $championship->id)
                     ->where('combination_hash', $hash)
-                    ->lockForUpdate()
                     ->exists();
 
                 if ($exists) {
@@ -279,8 +282,13 @@ class EntryController extends Controller
                     ]);
                 }
 
+                // 2. Calculamos el siguiente número secuencial para este campeonato
+                $lastNumber = Entry::where('championship_id', $championship->id)->max('number');
+                $nextNumber = $lastNumber ? $lastNumber + 1 : 1;
+
                 $entry = Entry::create([
                     'championship_id' => $championship->id,
+                    'number' => $nextNumber,
                     'name' => $validated['name'],
                     'phone' => $validated['phone'],
                     'payment_type' => $validated['payment_type'],
@@ -296,7 +304,7 @@ class EntryController extends Controller
                 }
 
                 return redirect()->route('admin.championships.entries.index', $championship->id)
-                    ->with('success', 'Cuadro registrado con éxito.');
+                    ->with('success', "Cuadro #{$nextNumber} registrado con éxito.");
             });
         } catch (\Illuminate\Database\QueryException $e) {
             if ($e->getCode() == 23000) {

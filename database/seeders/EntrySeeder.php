@@ -15,24 +15,34 @@ class EntrySeeder extends Seeder
 
         foreach ($championships as $championship) {
             // Determine number of entries to seed based on status
-            $count = $championship->status === 'finished' ? 5 : 12;
-            
+            $count = $championship->status === 'finished' ? 10 : 25;
+
             $participants = $championship->coleadores;
-            
+
             if ($participants->count() < $championship->coleadores_count) {
-                // Not enough participants in the championship to form a valid entry based on coleadores_count
                 continue;
             }
 
             for ($i = 1; $i <= $count; $i++) {
-                // Select exactly the required number of coleadores from those associated with this championship
+                // Select exactly the required number of coleadores
                 $selectedIds = $participants->random($championship->coleadores_count)->pluck('id')->toArray();
                 sort($selectedIds);
                 $hash = implode('-', $selectedIds);
 
+                // Evitar duplicados de hash en el seeder si el azar repite combinación
+                $exists = Entry::where('championship_id', $championship->id)
+                    ->where('combination_hash', $hash)
+                    ->exists();
+
+                if ($exists) {
+                    $i--; // Intentar de nuevo
+                    continue;
+                }
+
                 $entry = Entry::create([
                     'championship_id' => $championship->id,
-                    'name' => 'Cuadro ' . $i,
+                    'number' => $i, // Asignamos el correlativo
+                    'name' => 'Cuadro ' . fake()->words(2, true),
                     'phone' => '0414' . rand(1000000, 9999999),
                     'payment_type' => ['pago movil', 'zelle', 'usdt'][rand(0, 2)],
                     'reference' => 'REF-' . $championship->id . '-' . $i . '-' . rand(1000, 9999),

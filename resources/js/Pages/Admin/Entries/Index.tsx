@@ -231,7 +231,7 @@ export default function Index({
                                     { text: 'AR', style: 'tableHeaderAR' }
                                 ],
                                 ...data.entries.map((entry: any, index: number) => [
-                                    { text: index + 1, style: 'rankCell', alignment: 'center' },
+                                    { text: entry.number, style: 'rankCell', alignment: 'center' },
                                     { text: entry.name, style: 'entryName' },
                                     ...Array.from({ length: championship.coleadores_count }).map((_, i) => {
                                         const col = entry.coleadores[i];
@@ -555,6 +555,7 @@ export default function Index({
                                 <thead className="bg-parley-cream">
                                     <tr>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 w-12">Pos</th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 w-12">#</th>
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('name')}>
                                             <div className="flex items-center gap-1">Cuadro</div>
                                         </th>
@@ -581,6 +582,7 @@ export default function Index({
                                     {paginatedEntries.map((entry) => (
                                         <tr key={entry.id} className="hover:bg-parley-cream/30 transition-colors">
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown/40">{entry.rank}</td>
+                                            <td className="px-4 py-4 text-sm font-black text-parley-red">#{entry.number}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-parley-brown italic">{entry.name}</td>
                                             <td className="px-4 py-4 text-sm text-center">
                                                 <button
