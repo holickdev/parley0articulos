@@ -51,7 +51,7 @@ class PublicController extends Controller
         });
 
         return Inertia::render('Guest/Entries/Index', [
-            'championship' => $championship,
+            'championship' => $championship->load('coleadores:id,name'),
             'entries' => [
                 'data' => $paginatedItems,
                 'total' => $paginator->total(),
@@ -163,7 +163,7 @@ class PublicController extends Controller
 
         $coleadores = $request->coleadores;
         sort($coleadores);
-        $hash = md5(implode(',', $coleadores));
+        $hash = implode('-', $coleadores);
 
         $exists = Entry::where('championship_id', $championship->id)
             ->where('combination_hash', $hash)
