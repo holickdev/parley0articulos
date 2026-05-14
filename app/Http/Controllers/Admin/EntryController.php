@@ -211,32 +211,6 @@ class EntryController extends Controller
             ]);
         }
 
-        $lockKey = "lock_entry_{$championship->id}_{$hash}";
-        $sessionId = session()->getId();
-        $sessionMemoryKey = "locked_hash_{$championship->id}";
-
-        $previousHash = session()->get($sessionMemoryKey);
-        if ($previousHash && $previousHash !== $hash) {
-            $oldLockKey = "lock_entry_{$championship->id}_{$previousHash}";
-            if (Cache::get($oldLockKey) === $sessionId) {
-                Cache::forget($oldLockKey);
-            }
-        }
-
-        $lockAcquired = Cache::add($lockKey, $sessionId, now()->addMinutes(10));
-
-        if (!$lockAcquired) {
-            $existingLockOwner = Cache::get($lockKey);
-            if ($existingLockOwner !== $sessionId) {
-                throw ValidationException::withMessages([
-                    'coleadores' => 'Esta combinación está siendo procesada por otro usuario en este momento. Intenta de nuevo en unos minutos.'
-                ]);
-            }
-            Cache::put($lockKey, $sessionId, now()->addMinutes(10));
-        }
-
-        session()->put($sessionMemoryKey, $hash);
-
         return response()->json(['message' => 'Combinación disponible', 'hash' => $hash]);
     }
 
@@ -253,17 +227,9 @@ class EntryController extends Controller
 
         sort($validated['coleadores']);
         $hash = implode('-', $validated['coleadores']);
-        $lockKey = "lock_entry_{$championship->id}_{$hash}";
-
-        $lockOwner = Cache::get($lockKey);
-        if ($lockOwner && $lockOwner !== session()->getId()) {
-            throw ValidationException::withMessages([
-                'coleadores' => 'Esta combinación se encuentra actualmente reservada por otro usuario. Intente más tarde.'
-            ]);
-        }
 
         try {
-            return DB::transaction(function () use ($validated, $championship, $hash, $lockKey) {
+            return DB::transaction(function () use ($validated, $championship, $hash) {
                 // 1. Bloqueamos el registro del Campeonato.
                 // Esto serializa las peticiones concurrentes para este torneo específico y protege el cálculo del 'number'.
                 Championship::where('id', $championship->id)->lockForUpdate()->first();
@@ -294,10 +260,6 @@ class EntryController extends Controller
                 ]);
 
                 $entry->coleadores()->sync($validated['coleadores']);
-
-                if (Cache::get($lockKey) === session()->getId()) {
-                    Cache::forget($lockKey);
-                }
 
                 return redirect()->route('admin.championships.entries.index', $championship->id)
                     ->with('success', "Cuadro #{$nextNumber} registrado con éxito.");
@@ -344,19 +306,9 @@ class EntryController extends Controller
 
         sort($validated['coleadores']);
         $hash = implode('-', $validated['coleadores']);
-        $lockKey = "lock_entry_{$championship->id}_{$hash}";
-
-        if ($hash !== $entry->combination_hash) {
-            $lockOwner = Cache::get($lockKey);
-            if ($lockOwner && $lockOwner !== session()->getId()) {
-                throw ValidationException::withMessages([
-                    'coleadores' => 'Esta combinación se encuentra actualmente reservada por otro usuario. Intente más tarde.'
-                ]);
-            }
-        }
 
         try {
-            return DB::transaction(function () use ($validated, $championship, $entry, $hash, $lockKey) {
+            return DB::transaction(function () use ($validated, $championship, $entry, $hash) {
                 $exists = Entry::where('championship_id', $championship->id)
                     ->where('combination_hash', $hash)
                     ->where('id', '!=', $entry->id)
@@ -379,10 +331,6 @@ class EntryController extends Controller
                 ]);
 
                 $entry->coleadores()->sync($validated['coleadores']);
-
-                if (Cache::get($lockKey) === session()->getId()) {
-                    Cache::forget($lockKey);
-                }
 
                 return redirect()->route('admin.championships.entries.index', $championship->id)
                     ->with('success', 'Cuadro actualizado con éxito.');

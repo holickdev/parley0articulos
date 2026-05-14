@@ -34,13 +34,13 @@ export default function Guest({ children }: PropsWithChildren) {
                 <nav className="bg-parley-blue shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)] border-b border-white/10 relative z-10">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="flex h-20 justify-between items-center">
-                            <Link href="/" className="flex items-center gap-3">
-                                <ApplicationLogo className="h-20 w-20 text-white" />
+                            <Link href="/" className="flex items-center gap-2 sm:gap-3">
+                                <ApplicationLogo className="h-12 w-12 sm:h-20 sm:w-20 text-white" />
                                 <span className="sr-only">Parley 0 Artículos</span>
                                 <img 
                                     src="/parley0articulos-title.svg" 
                                     alt="Parley 0 Artículos" 
-                                    className="h-10 sm:h-12 w-auto"
+                                    className="h-7 sm:h-10 md:h-12 w-auto"
                                 />
                             </Link>
                             

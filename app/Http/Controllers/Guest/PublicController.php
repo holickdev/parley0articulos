@@ -175,16 +175,6 @@ class PublicController extends Controller
             ]);
         }
 
-        $lockKey = "lock_entry_{$championship->id}_{$hash}";
-        $sessionId = session()->getId();
-        $lockAcquired = Cache::add($lockKey, $sessionId, now()->addMinutes(10));
-
-        if (!$lockAcquired && Cache::get($lockKey) !== $sessionId) {
-            throw ValidationException::withMessages([
-                'coleadores' => 'Esta combinación está siendo procesada por otro usuario en este momento.'
-            ]);
-        }
-
         return response()->json(['message' => 'Combinación disponible', 'hash' => $hash]);
     }
 }
