@@ -42,6 +42,7 @@ interface Championship {
     id: number;
     name: string;
     coleadores_count: number;
+    has_articles: boolean;
     coleadores: { id: number; name: string }[];
 }
 
@@ -314,9 +315,11 @@ export default function Index({
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">
                                             <div className="flex items-center gap-1">TP</div>
                                         </th>
-                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">
-                                            <div className="flex items-center gap-1">AR</div>
-                                        </th>
+                                        {championship.has_articles && (
+                                            <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">
+                                                <div className="flex items-center gap-1">AR</div>
+                                            </th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-parley-gold/20 bg-white">
@@ -340,7 +343,9 @@ export default function Index({
                                             <td className="px-4 py-4 text-sm font-bold text-green-700">{entry.net_ce}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-red-700">{entry.total_cn}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-blue-700">{entry.total_tp}</td>
-                                            <td className="px-4 py-4 text-sm font-bold text-orange-700">-{entry.total_ar}</td>
+                                            {championship.has_articles && (
+                                                <td className="px-4 py-4 text-sm font-bold text-orange-700">-{entry.total_ar}</td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -486,7 +491,7 @@ export default function Index({
                                     <span className="w-6 text-center">CE</span>
                                     <span className="w-6 text-center">CN</span>
                                     <span className="w-6 text-center">TP</span>
-                                    <span className="w-6 text-center">AR</span>
+                                    {championship.has_articles && <span className="w-6 text-center">AR</span>}
                                 </div>
                             </div>
                             <ul className="space-y-2">
@@ -502,7 +507,7 @@ export default function Index({
                                             <span className="w-6 text-center text-green-700">{coleador.net_ce}</span>
                                             <span className="w-6 text-center text-red-700">{coleador.total_cn}</span>
                                             <span className="w-6 text-center text-blue-700">{coleador.total_tp}</span>
-                                            <span className="w-6 text-center text-orange-700">-{coleador.total_ar}</span>
+                                            {championship.has_articles && <span className="w-6 text-center text-orange-700">-{coleador.total_ar}</span>}
                                         </div>
                                     </li>
                                 ))}

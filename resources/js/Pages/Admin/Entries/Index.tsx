@@ -53,6 +53,7 @@ interface Championship {
     id: number;
     name: string;
     coleadores_count: number;
+    has_articles: boolean;
     coleadores: { id: number; name: string }[];
 }
 
@@ -206,7 +207,7 @@ export default function Index({
                         table: {
                             headerRows: 2,
                             stickyHeader: true,
-                            widths: [20, '*', ...Array(championship.coleadores_count * 2).fill('auto'), 25, 25, 25, 25],
+                            widths: [20, '*', ...Array(championship.coleadores_count * 2).fill('auto'), 25, 25, 25, ...(championship.has_articles ? [25] : [])],
                             body: [
                                 [
                                     { text: '#', style: 'tableHeader', rowSpan: 2 },
@@ -217,8 +218,8 @@ export default function Index({
                                         colSpan: 2,
                                         alignment: 'center'
                                     })).flatMap(item => [item, {}]),
-                                    { text: 'TOTALES CUADRO', style: 'tableHeaderTotal', colSpan: 4, alignment: 'center' },
-                                    {}, {}, {}
+                                    { text: 'TOTALES CUADRO', style: 'tableHeaderTotal', colSpan: championship.has_articles ? 4 : 3, alignment: 'center' },
+                                    ...Array(championship.has_articles ? 3 : 2).fill({})
                                 ],
                                 [
                                     {}, {},
@@ -229,7 +230,7 @@ export default function Index({
                                     { text: 'CE', style: 'tableHeaderCE' },
                                     { text: 'CN', style: 'tableHeaderCN' },
                                     { text: 'TP', style: 'tableHeaderTP' },
-                                    { text: 'AR', style: 'tableHeaderAR' }
+                                    ...(championship.has_articles ? [{ text: 'AR', style: 'tableHeaderAR' }] : [])
                                 ],
                                 ...data.entries.map((entry: any, index: number) => [
                                     { text: entry.number, style: 'rankCell', alignment: 'center' },
@@ -244,7 +245,7 @@ export default function Index({
                                     { text: entry.total_ce, style: 'cellCETotal', alignment: 'center' },
                                     { text: entry.total_cn, style: 'cellCNTotal', alignment: 'center' },
                                     { text: entry.total_tp, style: 'cellTPTotal', alignment: 'center' },
-                                    { text: entry.total_ar > 0 ? `-${entry.total_ar}` : '0', style: 'cellARTotal', alignment: 'center' }
+                                    ...(championship.has_articles ? [{ text: entry.total_ar > 0 ? `-${entry.total_ar}` : '0', style: 'cellARTotal', alignment: 'center' }] : [])
                                 ])
                             ]
                         },
@@ -501,7 +502,7 @@ export default function Index({
                                         <option value="ce">CE (Acumulado)</option>
                                         <option value="cn">CN (Acumulado)</option>
                                         <option value="tp">TP (Acumulado)</option>
-                                        <option value="ar">AR (Acumulado)</option>
+                                        {championship.has_articles && <option value="ar">AR (Acumulado)</option>}
                                     </select>
                                     <button
                                         type="button"
@@ -572,9 +573,11 @@ export default function Index({
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('tp')}>
                                             <div className="flex items-center gap-1">TP</div>
                                         </th>
-                                        <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('ar')}>
-                                            <div className="flex items-center gap-1">AR</div>
-                                        </th>
+                                        {championship.has_articles && (
+                                            <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60 cursor-pointer hover:text-parley-red transition-colors" onClick={() => toggleSort('ar')}>
+                                                <div className="flex items-center gap-1">AR</div>
+                                            </th>
+                                        )}
                                         <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-parley-brown/60">Estado</th>
                                         <th className="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider text-parley-brown/60">Acciones</th>
                                     </tr>
@@ -607,7 +610,9 @@ export default function Index({
                                             <td className="px-4 py-4 text-sm font-bold text-green-700">{entry.net_ce}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-red-700">{entry.total_cn}</td>
                                             <td className="px-4 py-4 text-sm font-bold text-blue-700">{entry.total_tp}</td>
-                                            <td className="px-4 py-4 text-sm font-bold text-orange-700">-{entry.total_ar}</td>
+                                            {championship.has_articles && (
+                                                <td className="px-4 py-4 text-sm font-bold text-orange-700">-{entry.total_ar}</td>
+                                            )}
                                             <td className="px-4 py-4 text-sm">
                                                 <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded-full ${statusStyles[entry.status]}`}>
                                                     {statusLabels[entry.status]}
@@ -796,7 +801,7 @@ export default function Index({
                                     <span className="w-6 text-center">CE</span>
                                     <span className="w-6 text-center">CN</span>
                                     <span className="w-6 text-center">TP</span>
-                                    <span className="w-6 text-center">AR</span>
+                                    {championship.has_articles && <span className="w-6 text-center">AR</span>}
                                 </div>
                             </div>
                             <ul className="space-y-2">
@@ -812,7 +817,7 @@ export default function Index({
                                             <span className="w-6 text-center text-green-700">{coleador.net_ce}</span>
                                             <span className="w-6 text-center text-red-700">{coleador.total_cn}</span>
                                             <span className="w-6 text-center text-blue-700">{coleador.total_tp}</span>
-                                            <span className="w-6 text-center text-orange-700">-{coleador.total_ar}</span>
+                                            {championship.has_articles && <span className="w-6 text-center text-orange-700">-{coleador.total_ar}</span>}
                                         </div>
                                     </li>
                                 ))}
